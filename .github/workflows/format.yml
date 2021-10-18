@@ -1,15 +1,15 @@
-- name: SQLAutoFormatter
-  # You may pin to the exact commit or the version.
-  # uses: yoheikikuta/sql-autoformat-action@cfbf4e1126d700ae8ac1d14c4fe7f9264aab1cc5
-  uses: yoheikikuta/sql-autoformat-action@v1.0.2
-  with:
-    # The GITHUB_TOKEN secret.
-    github_token: 
-    # Whether formatter should try to fix code style issues automatically.
-    auto_fix: # optional, default is true
-    # Username for auto-format commits.
-    git_name: # optional, default is BigQuery AutoFormatter
-    # Email address for auto-fix commits.
-    git_email: # optional, default is test@example.com
-    # Template for auto-format commit messages.
-    commit_message: # optional, default is Auto-format queries
+name: sqlcheck workflow1
+on: pull_request
+
+jobs:
+  sqlcheck:
+    name: sqlcheck job
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: yokawasa/action-sqlcheck@v1.3.0
+      with:
+        post-comment: true
+        risk-level: 3
+        verbose: false
+        token: ${{ secrets.GITHUB_TOKEN }}
