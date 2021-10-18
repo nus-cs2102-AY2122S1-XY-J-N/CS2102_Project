@@ -1,29 +1,16 @@
-DROP
-TABLE 
-IF 
-EXISTS
-Test;
-
-CREATE
-TABLE
-Test (a INT, b 
-INT);
-
-INSERT 
-INTO
-Test VALUES( (1,2),  
-
-
-
-(3,4) );
-
+DROP TABLE IF EXISTS Test;
+CREATE TABLE Test
+(
+  a INT,
+  b INT
+);
+INSERT INTO Test
+VALUES
+  ((1, 2), (3, 4));
 SELECT
-*
-
-
-
+  *
 FROM
-
-Test WHERE a  < b;
-
+  Test
+WHERE
+  a < b;
 DROP TABLE IF EXISTS Test;
