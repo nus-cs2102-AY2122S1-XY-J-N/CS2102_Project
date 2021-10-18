@@ -19,7 +19,7 @@ jobs:
         # `POSTGRES_HOST` is `postgres`
         env:
           # optional (defaults to `postgres`)
-          POSTGRES_DB: postgres_db
+          POSTGRES_DB: project_db
           # required
           POSTGRES_PASSWORD: postgres_password
           # optional (defaults to `5432`)
@@ -44,8 +44,15 @@ jobs:
 
       # queries database with postgres client
       - name: Query database
-        run: psql -h postgres -d postgres_db -U postgres_user -c 'SELECT 1;'
+        run: psql -h postgres -d project_db -U postgres_user -c 'SELECT 1;'
         env:
           # postgress password is required; alternatively, you can run:
           # `PGPASSWORD=postgres_password psql ...`
+          PGPASSWORD: postgres_password
+          
+          
+      # import schema from github
+      - name: Add Schema database
+        run: psql -h postgres -d postgres_db -U postgres_user -f schema.sql
+        env:
           PGPASSWORD: postgres_password
