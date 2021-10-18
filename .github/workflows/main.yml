@@ -1,0 +1,20 @@
+on: [push]
+
+jobs:
+  reformat-sql:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the source code so we have some files to look at.
+      - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+      # Run the reformat action
+      - name: Reformat SQL Files
+        uses: credfeto/action-sql-format@master
+      - name: Commit files
+        run: |
+          git config --local user.email "<githubusername>@users.noreply.github.com"
+          git config --local user.name "SQL Reformat Bot"
+          git commit --all -m"Reformat SQL Files to common format." || true
+      - name: Push
+        run: git push "https://${{github.actor}}:${{secrets.SOURCE_PUSH_TOKEN}}@github.com/${{github.repository}}.git" "HEAD:${{ env.GIT_BRANCH }}"
