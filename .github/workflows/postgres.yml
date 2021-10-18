@@ -53,6 +53,6 @@ jobs:
           
       # import schema from github
       - name: Add Schema database
-        run: psql -h postgres -d postgres_db -U postgres_user -f schema.sql
+        run: psql -h postgres -d project_db -U postgres_user -f schema.sql
         env:
           PGPASSWORD: postgres_password
