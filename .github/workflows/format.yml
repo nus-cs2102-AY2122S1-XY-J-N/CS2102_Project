@@ -1,21 +1,15 @@
-name: "Formatting queries"
-on: push
-jobs:
-    test: # make sure the action works on a clean machine without building
-        name: Run auto formatter
-        runs-on: ubuntu-latest
-
-        steps:
-            - name: Check out Git repository
-              uses: actions/checkout@v2
-
-            - name: Install zetasql
-              run: |
-                wget https://github.com/Matts966/zetasql-formatter/releases/latest/download/zetasql-formatter_linux_x86_64.zip
-                sudo unzip zetasql-formatter_linux_x86_64.zip -d /usr/local/bin
-                rm zetasql-formatter_linux_x86_64.zip
-
-            - name: SQLAutoFormatter
-              uses: yoheikikuta/sql-autoformat-action
-              with:
-                github_token: ${{ secrets.github_token }}
+- name: SQLAutoFormatter
+  # You may pin to the exact commit or the version.
+  # uses: yoheikikuta/sql-autoformat-action@cfbf4e1126d700ae8ac1d14c4fe7f9264aab1cc5
+  uses: yoheikikuta/sql-autoformat-action@v1.0.2
+  with:
+    # The GITHUB_TOKEN secret.
+    github_token: 
+    # Whether formatter should try to fix code style issues automatically.
+    auto_fix: # optional, default is true
+    # Username for auto-format commits.
+    git_name: # optional, default is BigQuery AutoFormatter
+    # Email address for auto-fix commits.
+    git_email: # optional, default is test@example.com
+    # Template for auto-format commit messages.
+    commit_message: # optional, default is Auto-format queries
