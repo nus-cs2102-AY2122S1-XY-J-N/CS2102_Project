@@ -1,10 +1,5 @@
 name: "Formatting queries"
-on: # rebuild any PRs and master branch changes
-    pull_request:
-    push:
-        branches:
-            - master
-
+on: push
 jobs:
     test: # make sure the action works on a clean machine without building
         name: Run auto formatter
