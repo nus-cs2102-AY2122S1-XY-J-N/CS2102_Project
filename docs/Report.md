@@ -2,7 +2,7 @@
 
 | Member name | Student number | Responsibilities |
 |---|---|---|
-| Low Zhen Wei Jerrell | A0XX | xx |
+| Low Zhen Wei Jerrell | A0214232X | xx |
 | Li Xi Yuan | A0XX | XX |
 | Nigel Ng | A0217408H | XX |
 
