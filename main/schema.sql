@@ -1,7 +1,9 @@
 /**
 * SQL commands to create application's database scheme
 **/
+
 --table declaration
+
 DROP TABLE IF EXISTS Health_Declaration CASCADE
 ;
 
@@ -18,16 +20,21 @@ DROP TABLE IF EXISTS Meeting_Rooms CASCADE
 ;
 
 --isa
+
 DROP VIEW IF EXISTS Junior;
 DROP VIEW IF EXISTS Senior;
 DROP VIEW IF EXISTS Manager;
+
 --relations
+
 DROP TABLE IF EXISTS Updates CASCADE
 ;
 
 DROP TABLE IF EXISTS Declare_Temp CASCADE
 ; -- DATE, EID
+
 --schema for TABLE
+
 CREATE TABLE Departments
              (
                           did   INTEGER PRIMARY KEY
@@ -112,6 +119,7 @@ CREATE TABLE Sessions
 ;
 
 --views
+
 CREATE VIEW Junior AS
             (
                    SELECT
