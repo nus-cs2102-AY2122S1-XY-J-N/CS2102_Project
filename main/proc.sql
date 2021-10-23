@@ -69,3 +69,15 @@ EXECUTE FUNCTION assign_email();
 /**
  * End of adding employee routines
  */
+ 
+  /**
+  * Routines for removing employees
+  */
+CREATE OR REPLACE PROCEDURE remove_employee
+(IN eid INTEGER, resigned_date DATE)
+AS $$
+UPDATE employees SET resigned_date = $2 WHERE eid = $1;
+$$ Language sql;
+ /**
+  * End of removing employees
+  */
