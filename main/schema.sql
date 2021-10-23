@@ -44,7 +44,7 @@ CREATE TABLE Departments
 
 CREATE TABLE Employees
              (
-                          eid   INTEGER PRIMARY KEY
+                          eid SERIAL PRIMARY KEY
                         , ename VARCHAR(50)
                         , email VARCHAR(50) UNIQUE
                         , --trigger to check for @
