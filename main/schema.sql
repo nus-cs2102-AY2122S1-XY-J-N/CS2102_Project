@@ -42,11 +42,12 @@ CREATE TABLE Departments
              )
 ;
 
+create extension citext;
 CREATE TABLE Employees
              (
-                          eid   INTEGER PRIMARY KEY
+                          eid SERIAL PRIMARY KEY
                         , ename VARCHAR(50)
-                        , email VARCHAR(50) UNIQUE
+                        , email TEXT UNIQUE
                         , --trigger to check for @
                           home_contact INTEGER
                         , --design decision
