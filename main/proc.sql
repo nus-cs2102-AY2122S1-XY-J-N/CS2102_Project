@@ -53,17 +53,11 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION assign_email()
 	RETURNS trigger AS $$
 	DECLARE 
-		Eprefix VARCHAR(1) := '';
 		Eabbrv VARCHAR(10) := '';
 		EmailEnd VARCHAR(11) := '@gsnail.com';
 	BEGIN
-		CASE
-			WHEN NEW.kind = 'Junior' THEN Eprefix := 'J';
-			WHEN NEW.kind = 'Senior' THEN Eprefix := 'S';
-			WHEN NEW.kind = 'Manager' THEN Eprefix := 'M';
-		END case;
-		Eabbrv = get_name_initials(NEW.ename);
-		NEW.email := CONCAT(Eprefix, Eabbrv, NEW.eid, EmailEnd);
+		Eabbrv := get_name_initials(NEW.ename);
+		NEW.email := CONCAT(Eabbrv, NEW.eid, EmailEnd);
 	RETURN NEW;
 	END;
 	$$ LANGUAGE plpgsql;
