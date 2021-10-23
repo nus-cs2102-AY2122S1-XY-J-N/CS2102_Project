@@ -5,18 +5,16 @@
 ###################################################
 
 #Create project database
-createdb -U postgres RoomsManagerDatabase
+psql -U postgres -c "DROP DATABASE IF EXISTS RoomsManagerDatabase;"
 
 #Set the value of variable
 database="RoomsManagerDatabase"
  
-#Check database creation: 
-
-psql -d $database -c "SELECT 'Success';"
+#Create database
+createdb -U postgres RoomsManagerDatabase
 
 # Import .sql files into database
-
-psql -d $database -U postgres -f data.sql -f proc.sql -f schema.sql
+psql -d $database -U postgres -f schema.sql -f proc.sql -f data.sql
 
 echo ##########################
 echo ###displaying tables...###
@@ -26,5 +24,7 @@ echo ######################### #
 psql -d $database -U postgres -c "\d+"
  
 #Print done
-echo finished setting up, exiting
+echo finished setting up, exiting.
+echo 	use ' run.sh ' to run the database!
+$SHELL
 
