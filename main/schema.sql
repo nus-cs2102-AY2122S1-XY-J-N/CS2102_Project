@@ -25,7 +25,7 @@ CREATE TABLE Departments (
 );
 
 CREATE TABLE Employees (
-  eid INTEGER PRIMARY KEY, 
+  eid SERIAL PRIMARY KEY, 
   ename VARCHAR(50), 
   email TEXT UNIQUE, 
   --trigger to check for @
@@ -33,7 +33,7 @@ CREATE TABLE Employees (
   --design decision
   hp_contact VARCHAR(50), 
   office_contact VARCHAR(50), 
-  resigned_date DATE DEFAULT NULL, 
+  resigned_date DATE, 
   did INTEGER REFERENCES Departments(did), 
   kind VARCHAR(7), 
   -- junior, senior or manager ISA
@@ -72,7 +72,7 @@ CREATE TABLE Updates(
 CREATE TABLE Sessions (
   participant_eid INT REFERENCES Employees(eid), 
   --some employee who joins the meeting
-  approving_manager_eid INT DEFAULT NULL REFERENCES Employees(eid), 
+  approving_manager_eid INT REFERENCES Employees(eid), 
   --check here
   booker_eid INT REFERENCES Employees(eid), 
   --the booker  (trigger)
