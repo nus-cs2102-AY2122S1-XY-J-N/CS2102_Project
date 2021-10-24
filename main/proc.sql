@@ -23,6 +23,20 @@ WHERE
        did = target_did $$ LANGUAGE sql
 ;
 
+CREATE OR REPLACE PROCEDURE add_room
+       (FLOOR_NUM integer, ROOM_NUM integer, ROOM_NAME VARCHAR(50), DID integer)
+AS $$
+       INSERT INTO Meeting_Rooms (rname, room, floor, did) values (ROOM_NAME, ROOM_NUM, FLOOR_NUM, DID)
+
+$$ LANGUAGE sql;
+
+CREATE OR REPLACE PROCEDURE change_capacity
+       (floor integer, room_num integer, capacity integer, date date)
+AS $$
+       insert into Updates values (date, NULL, capacity, room_num, floor)
+
+$$ LANGUAGE sql;
+
 /**
  * Routines for adding employee
  */
