@@ -59,7 +59,7 @@ CREATE TABLE Meeting_Rooms (
   PRIMARY KEY (floor, room)
 );
 
-CREATE TABLE Updates(
+CREATE TABLE Updates (
   date DATE, 
   approving_eid INTEGER DEFAULT NULL,   --trigger needed to check if eid is a manager
   new_cap INTEGER CHECK (new_cap > 0), 
