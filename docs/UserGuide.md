@@ -25,3 +25,9 @@ Then  `CALL add_employee('Abraham Benedict Cumberbatch Donkey', 12345678, 'Senio
 `CALL remove_employee(IN eid INTEGER, resigned_date DATE);`
 
 This call simply tags a date in the resigned_date attribute of the employee with given eid.
+
+### Adding a room
+`CALL add_room(room_name VARCHAR(50),floor_num INTEGER, room_num INTEGER,  did INTEGER)`
+
+### Changing room capacity
+`CALL change_capacity(floor INTEGER, room_num INTEGER, capacity INTEGER, date DATE)`
