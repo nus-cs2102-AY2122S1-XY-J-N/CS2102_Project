@@ -2,6 +2,10 @@
 * SQL  or  PL/pgSQL routines of implementation
 **/
 --basic
+
+/**
+ * Adding department, remove department
+ */
 CREATE OR REPLACE PROCEDURE add_department
 (IN did INTEGER, IN dname VARCHAR(50))
 AS $$
@@ -21,9 +25,15 @@ FROM
 WHERE
        did = target_did $$ LANGUAGE sql
 ;
+/**
+ * End
+ */
 
+/**
+ * Routines to add room, change capacity
+ */
 CREATE OR REPLACE PROCEDURE add_room
-(floor_num INTEGER, room_num INTEGER, room_name VARCHAR(50), did INTEGER)
+(room_name VARCHAR(50),floor_num INTEGER, room_num INTEGER,  did INTEGER)
 AS $$
 INSERT INTO Meeting_Rooms
        (rname
@@ -53,6 +63,11 @@ insert into Updates values
        $$ LANGUAGE sql
 ;
 
+/** 
+ * End
+ */
+ 
+ 
 /**
 * Routines for adding employee
 */
@@ -89,6 +104,7 @@ END LOOP;
 RETURN initials;
 END;
 $$ LANGUAGE plpgsql;
+
 -- create email and assign for employee
 CREATE OR REPLACE FUNCTION assign_email()
 RETURNS trigger AS $$
@@ -108,12 +124,6 @@ ON
        employees FOR EACH ROW EXECUTE FUNCTION assign_email()
 ;
 
-/**
-* End of adding employee routines
-*/
-/**
-* Routines for removing employees
-*/
 CREATE OR REPLACE PROCEDURE remove_employee
 (IN eid INTEGER, resigned_date DATE)
 AS $$
@@ -123,8 +133,7 @@ SET    resigned_date = $2
 WHERE
        eid = $1
 ;
-
 $$ Language sql;
 /**
-* End of removing employees
+* End
 */
