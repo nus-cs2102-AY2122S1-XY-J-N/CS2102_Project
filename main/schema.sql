@@ -25,10 +25,9 @@ CREATE TABLE Departments
 CREATE TABLE Employees
              (
                           eid SERIAL PRIMARY KEY
-                        , ename VARCHAR(50)
-                        , email TEXT UNIQUE
-                        ,
-                          home_contact VARCHAR(50)
+                        , ename        VARCHAR(50)
+                        , email        TEXT UNIQUE
+                        , home_contact VARCHAR(50)
                         ,
                            --design decision
                           hp_contact     VARCHAR(50)
@@ -136,4 +135,20 @@ CREATE VIEW Manager AS
                    WHERE
                           kind = 'Manager'
             )
+;
+
+/**
+* Triggers to prevent direcct access
+*/
+-- Prevent deleting of employees, use remove_employee instead.
+CREATE OR REPLACE FUNCTION stop_delete_employee()
+RETURNS trigger AS $$
+BEGIN
+RAISE EXCEPTION 'Unable to delete record directly. Please use remove_employee';
+END; $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER stop_delete_statement BEFORE
+DELETE
+ON
+       Employees FOR EACH STATEMENT EXECUTE FUNCTION stop_delete_employee()
 ;
