@@ -13,10 +13,10 @@ CREATE OR REPLACE PROCEDURE add_department
 AS
 $$
 INSERT INTO departments VALUES
-    (did
-      , dname
-    )
-    $$ LANGUAGE sql
+       (did
+            , dname
+       )
+       $$ LANGUAGE sql
 ;
 
 CREATE OR REPLACE PROCEDURE remove_department
@@ -27,9 +27,9 @@ AS
 $$
 DELETE
 FROM
-    departments
+       departments
 WHERE
-    did = target_did $$ LANGUAGE sql
+       did = target_did $$ LANGUAGE sql
 ;
 
 /**
@@ -48,18 +48,18 @@ room_name  VARCHAR(50)
 AS
 $$
 INSERT INTO Meeting_Rooms
-    (rname
-      , room
-      , floor
-      , did
-    )
-    values
-    (room_name
-      , room_num
-      , floor_num
-      , did
-    )
-    $$ LANGUAGE sql
+       (rname
+            , room
+            , floor
+            , did
+       )
+       values
+       (room_name
+            , room_num
+            , floor_num
+            , did
+       )
+       $$ LANGUAGE sql
 ;
 
 CREATE OR REPLACE PROCEDURE change_capacity
@@ -72,13 +72,13 @@ floor      INTEGER
 AS
 $$
 insert into Updates values
-    (date
-      , NULL
-      , capacity
-      , room_num
-      , floor
-    )
-    $$ LANGUAGE sql
+       (date
+            , NULL
+            , capacity
+            , room_num
+            , floor
+       )
+       $$ LANGUAGE sql
 ;
 
 /**
@@ -97,18 +97,18 @@ IN ename     VARCHAR(50)
 AS
 $$
 INSERT INTO employees
-    ( ename
-      , hp_contact
-      , kind
-      , did
-    )
-    VALUES
-    ( ename
-      , hp_contact
-      , kind
-      , did
-    )
-    $$ LANGUAGE SQL
+       ( ename
+            , hp_contact
+            , kind
+            , did
+       )
+       VALUES
+       ( ename
+            , hp_contact
+            , kind
+            , did
+       )
+       $$ LANGUAGE SQL
 ;
 
 -- extracting initials for email generation
@@ -150,7 +150,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER assign_email_add BEFORE
 INSERT
 ON
-    employees FOR EACH ROW EXECUTE FUNCTION assign_email()
+       employees FOR EACH ROW EXECUTE FUNCTION assign_email()
 ;
 
 CREATE OR REPLACE PROCEDURE remove_employee
@@ -161,10 +161,10 @@ IN eid          INTEGER
 AS
 $$
 UPDATE
-    employees
-SET resigned_date = $2
+       employees
+SET    resigned_date = $2
 WHERE
-    eid = $1
+       eid = $1
 ;
 
 $$ Language SQL;
@@ -177,31 +177,37 @@ $$ Language SQL;
 CREATE OR REPLACE PROCEDURE declare_health
 (
 IN eid_input        INTEGER
-,  date_input DATE
+, date_input        DATE
 , temperature_input DECIMAL
 )
 AS
 $$
 BEGIN
 INSERT INTO Health_Declaration
-    ( eid
-      , DATE
-      , temp
-    )
-    VALUES
-    ( eid
-      , DATE
-      , temperature
-    )
-	ON CONFLICT(eid)
-		DO UPDATE SET temp = $3 
-			WHERE eid = $1 AND date = $2
+       ( eid
+            , DATE
+            , temp
+       )
+       VALUES
+       ( eid
+            , DATE
+            , temperature
+       )
+ON
+       CONFLICT
+       (eid
+       )
+       DO
+UPDATE
+SET    temp = $3
+WHERE
+       eid      = $1
+       AND date = $2
 ;
 
 END IF;
 END
 $$ Language plpgsql;
-
 --trigger to assign fever
 CREATE OR REPLACE FUNCTION assign_fever()
 RETURNS TRIGGER AS $$
@@ -210,20 +216,41 @@ IF (NEW.temp >= 37.5) THEN
 NEW.fever := TRUE;
 ELSE
 NEW.fever := FALSE;
-END IF; 
+END IF;
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER assign_fever_trig BEFORE
 INSERT
-    OR
+       OR
 UPDATE
 ON
-    Health_Declaration FOR EACH ROW EXECUTE PROCEDURE assign_fever()
+       Health_Declaration FOR EACH ROW EXECUTE PROCEDURE assign_fever()
 ;
 
 /**
 * END
 */
+/**
+* Start of routines for non-compliance
+*/
+CREATE OR REPLACE FUNCTION non_compliance(
+sDate DATE, eDate DATE
+)
+RETURNS TABLE(eid INTEGER, count INTEGER) AS $$
+DECLARE
+count INTEGER := 1;
+BEGIN
+
+	WITH emp_all_count AS (
+		SELECT HD.eid, 0
+			FROM Health_Declaration HD
+	)
 	
+	loop
+	RETURN QUERY
+	SELECT * FROM emp_all_count;
+END $$ LANGUAGE plpgsql;
+/**
+* END
+*/
