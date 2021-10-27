@@ -47,25 +47,3 @@ CALL add_employee ('Barnard Garnsworthy', '+63 865 417 5689', 'Senior', 8);
 CALL add_employee ('Errick Bennough', '+381 266 549 2972', 'Senior', 3);
 CALL add_employee ('Aubert Trahmel', '+380 557 174 6238', 'Junior', 6);
 
-
-
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (1, 38.0, true, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (2, 37.4, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (3, 36.3, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (4, 37.5, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (5, 36.2, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (6, 37.1, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (7, 36.7, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (8, 37.1, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (9, 37.9, true, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (10, 36.8, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (11, 36.7, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (12, 37.0, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (13, 36.2, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (14, 37.2, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (15, 37.8, true, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (16, 37.1, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (17, 37.8, true, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (18, 38.0, true, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (19, 36.4, false, '2021-10-24');
-INSERT INTO Health_Declaration (eid, temp, fever, date) VALUES (20, 37.2, false, '2021-10-24');
