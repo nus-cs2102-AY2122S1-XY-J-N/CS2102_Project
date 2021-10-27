@@ -133,7 +133,6 @@ END LOOP;
 RETURN initials;
 END;
 $$ LANGUAGE plpgsql;
-
 -- create email and assign for employee
 CREATE OR REPLACE FUNCTION assign_email()
 RETURNS TRIGGER
@@ -172,18 +171,28 @@ $$ Language SQL;
 /**
 * End
 */
-
 /**
 * Routines for declaring health
 */
 CREATE OR REPLACE PROCEDURE declare_health
 (
-IN eid        INTEGER
-,             DATE DATE
-, temperature DECIMAL
+IN eid_input        INTEGER
+,  date_input DATE
+, temperature_input DECIMAL
 )
 AS
 $$
+BEGIN
+IF EXISTS(SELECT 1 
+			FROM Health_Declaration
+			WHERE eid = $1 
+			AND date = $2) 
+			THEN
+UPDATE Health_Declaration
+	SET temp = $3
+	WHERE eid = $1 AND date = $2;
+
+ELSE 
 INSERT INTO Health_Declaration
     ( eid
       , DATE
@@ -195,24 +204,32 @@ INSERT INTO Health_Declaration
       , temperature
     )
 ;
-$$ Language SQL;
+
+END IF;
+END
+$$ Language plpgsql;
 
 --trigger to assign fever
 CREATE OR REPLACE FUNCTION assign_fever()
-RETURNS trigger AS $$
+RETURNS TRIGGER AS $$
 BEGIN
-	IF (NEW.temp >= 37.5) THEN
-		NEW.fever := TRUE;
-	ELSE 
-		NEW.fever := FALSE;
-	END IF;	RETURN NEW;
-END; 
+IF (NEW.temp >= 37.5) THEN
+NEW.fever := TRUE;
+ELSE
+NEW.fever := FALSE;
+END IF; 
+RETURN NEW;
+END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER assign_fever_trig
-BEFORE INSERT OR UPDATE ON Health_Declaration
-FOR EACH ROW
-EXECUTE PROCEDURE assign_fever();
+CREATE TRIGGER assign_fever_trig BEFORE
+INSERT
+    OR
+UPDATE
+ON
+    Health_Declaration FOR EACH ROW EXECUTE PROCEDURE assign_fever()
+;
+
 /**
 * END
 */
