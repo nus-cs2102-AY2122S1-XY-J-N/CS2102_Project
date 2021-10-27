@@ -138,7 +138,7 @@ CREATE VIEW Manager AS
 ;
 
 /**
-* Triggers to prevent direcct access
+* Triggers to prevent direct access
 */
 -- Prevent deleting of employees, use remove_employee instead.
 CREATE OR REPLACE FUNCTION stop_delete_employee()
