@@ -183,16 +183,6 @@ IN eid_input        INTEGER
 AS
 $$
 BEGIN
-IF EXISTS(SELECT 1 
-			FROM Health_Declaration
-			WHERE eid = $1 
-			AND date = $2) 
-			THEN
-UPDATE Health_Declaration
-	SET temp = $3
-	WHERE eid = $1 AND date = $2;
-
-ELSE 
 INSERT INTO Health_Declaration
     ( eid
       , DATE
@@ -203,6 +193,9 @@ INSERT INTO Health_Declaration
       , DATE
       , temperature
     )
+	ON CONFLICT(eid)
+		DO UPDATE SET temp = $3 
+			WHERE eid = $1 AND date = $2
 ;
 
 END IF;
