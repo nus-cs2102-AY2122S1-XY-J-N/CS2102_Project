@@ -374,3 +374,5 @@ $$ LANGUAGE plpgsql;
 /**
 * End of INSERT sessions PROCEDURE
 */
+
+
