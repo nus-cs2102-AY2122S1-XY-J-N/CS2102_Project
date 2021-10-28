@@ -5,7 +5,7 @@
 ###################################################
 
 #Create project database
-psql -U postgres -c "DROP DATABASE IF EXISTS RoomsManagerDatabase;"
+psql -U postgres -c "DROP DATABASE IF EXISTS "RoomsManagerDatabase";"
 
 #Set the value of variable
 database="RoomsManagerDatabase"

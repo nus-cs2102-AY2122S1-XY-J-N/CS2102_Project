@@ -98,7 +98,7 @@ CREATE TABLE Sessions
               -- must  include room
              , FOREIGN KEY (room, floor) REFERENCES Meeting_Rooms (room, floor)
             , PRIMARY KEY( participant_eid, time, booker_eid, room, floor )
-			, CHECK (to_char(time, 'YYYY:DD:HH24:MI') LIKE '%00:00') -- check that ends in an hour
+			, CHECK (to_char(time, 'YYYY:DD:HH24:MI:SS') LIKE '%00:00') -- check that ends in an hour
        )
 ;
 
