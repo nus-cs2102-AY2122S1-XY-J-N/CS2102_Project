@@ -234,14 +234,14 @@ ON
 /**
 * Routine to add sessions
 */
-CREATE OR REPLACE FUNCTION add_random_sessions(n INTEGER)
-RETURNS TABLE(participant_id INTEGER,
-			man_id INTEGER,
-			booker_id INTEGER,
-			room_name VARCHAR(50),
-			room_no INTEGER,
-			floor_no INTEGER,
-			time_of_booking TIMESTAMP)
+CREATE OR REPLACE FUNCTION generate_random_sessions_table(n INTEGER)
+RETURNS TABLE(participant_id                                INTEGER,
+man_id                                                      INTEGER,
+booker_id                                                   INTEGER,
+room_name                                                   VARCHAR(50),
+room_no                                                     INTEGER,
+floor_no                                                    INTEGER,
+time_of_booking                                             TIMESTAMP)
 AS
 $$
 BEGIN
@@ -254,7 +254,7 @@ WITH rand_id AS
                    employees
             ORDER BY
                    random()
-			LIMIT n
+            LIMIT  n
      )
    , rand_man_id AS
      (
@@ -264,7 +264,7 @@ WITH rand_id AS
                    manager
             ORDER BY
                    random()
-			LIMIT n
+            LIMIT  n
      )
    , rand_book_id AS
      (
@@ -274,38 +274,103 @@ WITH rand_id AS
                    junior
             ORDER BY
                    random()
-			LIMIT n
+            LIMIT  n
      )
    , rand_room AS
      (
             select
                    rname room_name
-                 , room room_no
+                 , room  room_no
                  , floor floor_no
             from
                    meeting_rooms
             ORDER BY
                    random()
-			LIMIT n
+            LIMIT  n
      )
    , get_timestamp AS
      (
             SELECT DISTINCT
                    generate_series( (current_date)::timestamp, (current_date + interval '1 MONTH')::timestamp, interval '1 hour' ) timestamps
-			LIMIT n
+            LIMIT  n
      )
- 
-SELECT DISTINCT *
+SELECT DISTINCT
+       *
 FROM
        rand_id
      , rand_man_id
      , rand_book_id
      , rand_room
-	 , get_timestamp
-LIMIT n;
-	 
+     , get_timestamp
+LIMIT  n
+;
+
 END;
 $$ LANGUAGE plpgsql;
 /**
-* End generate sessions
+* End generate sessions FUNCTION
+*/
+/**
+* Start of insert into sessions  PROCEDURE
+*/
+-- adding normal sessions
+CREATE OR REPLACE PROCEDURE add_sessions(participant_eid INTEGER, approving_manager_eid INTEGER, booker_eid INTEGER, room INTEGER, floor INTEGER, time_in TIMESTAMP, rname VARCHAR(50))
+AS
+$$
+BEGIN
+INSERT INTO Sessions
+       (participant_eid
+            , approving_manager_eid
+            , booker_eid
+            , room
+            , floor
+            , time
+            , rname
+       )
+       VALUES
+       ($1
+            , $2
+            , $3
+            , $4
+            , $5
+            , $6
+            , $7
+       )
+;
+
+END;
+$$ LANGUAGE plpgsql;
+-- adding random sessions
+CREATE OR REPLACE PROCEDURE add_random_sessions(how_many_to_insert INTEGER)
+AS
+$$
+BEGIN
+INSERT INTO Sessions
+       (participant_eid
+            , approving_manager_eid
+            , booker_eid
+            , room
+            , floor
+            , time
+            , rname
+       )
+SELECT
+       participant_id
+     , man_id
+     , booker_id
+     , room_no
+     , floor_no
+     , time_of_booking
+     , room_name
+FROM
+       generate_random_sessions_table(how_many_to_insert)
+ON
+       CONFLICT(participant_eid, time, booker_eid, room, floor) -- primary key
+       DO NOTHING                                               -- strictly  for dummy data
+;
+
+END;
+$$ LANGUAGE plpgsql;
+/**
+* End of INSERT sessions PROCEDURE
 */
