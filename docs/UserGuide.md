@@ -25,3 +25,20 @@ Then  `CALL add_employee('Abraham Benedict Cumberbatch Donkey', 12345678, 'Senio
 `CALL remove_employee(IN eid INTEGER, resigned_date DATE);`
 
 This call simply tags a date in the resigned_date attribute of the employee with given eid.
+
+### Adding a room
+`CALL add_room(room_name VARCHAR(50),floor_num INTEGER, room_num INTEGER,  did INTEGER)`
+
+### Changing room capacity
+`CALL change_capacity(floor INTEGER, room_num INTEGER, capacity INTEGER, date DATE)`
+
+### Declaring health
+`CALL declare_health (eid INTEGER, date DATE, temperature DECIMAL);`
+
+## List of admin procedures
+Generating random sessions data with today's date - 1 month from now as timestamp.
+The input corresponds to how many rows to add
+Note that it's more efficient calling in small numbers multiple times (e.g. 10 rows to add = 5 + 5)
+`CALL add_random_sessions(how_many_to_insert INTEGER)`
+
+
