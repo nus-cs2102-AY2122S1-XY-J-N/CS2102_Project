@@ -13,10 +13,10 @@ CREATE OR REPLACE PROCEDURE add_department
 AS
 $$
 INSERT INTO departments VALUES
-    (did
-      , dname
-    )
-    $$ LANGUAGE sql
+       (did
+            , dname
+       )
+       $$ LANGUAGE sql
 ;
 
 CREATE OR REPLACE PROCEDURE remove_department
@@ -27,9 +27,9 @@ AS
 $$
 DELETE
 FROM
-    departments
+       departments
 WHERE
-    did = target_did $$ LANGUAGE sql
+       did = target_did $$ LANGUAGE sql
 ;
 
 /**
@@ -48,18 +48,18 @@ room_name  VARCHAR(50)
 AS
 $$
 INSERT INTO Meeting_Rooms
-    (rname
-      , room
-      , floor
-      , did
-    )
-    values
-    (room_name
-      , room_num
-      , floor_num
-      , did
-    )
-    $$ LANGUAGE sql
+       (rname
+            , room
+            , floor
+            , did
+       )
+       values
+       (room_name
+            , room_num
+            , floor_num
+            , did
+       )
+       $$ LANGUAGE sql
 ;
 
 CREATE OR REPLACE PROCEDURE change_capacity
@@ -72,13 +72,13 @@ floor      INTEGER
 AS
 $$
 insert into Updates values
-    (date
-      , NULL
-      , capacity
-      , room_num
-      , floor
-    )
-    $$ LANGUAGE sql
+       (date
+            , NULL
+            , capacity
+            , room_num
+            , floor
+       )
+       $$ LANGUAGE sql
 ;
 
 /**
@@ -97,18 +97,18 @@ IN ename     VARCHAR(50)
 AS
 $$
 INSERT INTO employees
-    ( ename
-      , hp_contact
-      , kind
-      , did
-    )
-    VALUES
-    ( ename
-      , hp_contact
-      , kind
-      , did
-    )
-    $$ LANGUAGE SQL
+       ( ename
+            , hp_contact
+            , kind
+            , did
+       )
+       VALUES
+       ( ename
+            , hp_contact
+            , kind
+            , did
+       )
+       $$ LANGUAGE SQL
 ;
 
 -- extracting initials for email generation
@@ -150,7 +150,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER assign_email_add BEFORE
 INSERT
 ON
-    employees FOR EACH ROW EXECUTE FUNCTION assign_email()
+       employees FOR EACH ROW EXECUTE FUNCTION assign_email()
 ;
 
 CREATE OR REPLACE PROCEDURE remove_employee
@@ -161,10 +161,10 @@ IN eid          INTEGER
 AS
 $$
 UPDATE
-    employees
-SET resigned_date = $2
+       employees
+SET    resigned_date = $2
 WHERE
-    eid = $1
+       eid = $1
 ;
 
 $$ Language SQL;
@@ -176,33 +176,38 @@ $$ Language SQL;
 */
 CREATE OR REPLACE PROCEDURE declare_health
 (
-IN eid_in  INTEGER
-,  date_in DATE
+IN eid_in INTEGER
+, date_in DATE
 , temp_in DECIMAL
 )
 AS
 $$
 BEGIN
 INSERT INTO Health_Declaration
-    ( eid
-      , date
-      , temp
-    )
-    VALUES
-    ( $1
-      , $2
-      , $3
-    )
-	ON CONFLICT(eid, date)
-		DO UPDATE 
-		SET temp = $3
-			WHERE Health_Declaration.eid = $1 
-			AND 
-			Health_Declaration.date = $2
+       ( eid
+            , date
+            , temp
+       )
+       VALUES
+       ( $1
+            , $2
+            , $3
+       )
+ON
+       CONFLICT
+       (eid
+            , date
+       )
+       DO
+UPDATE
+SET    temp = $3
+WHERE
+       Health_Declaration.eid      = $1
+       AND Health_Declaration.date = $2
 ;
+
 END;
 $$ Language plpgsql;
-
 --trigger to assign fever
 CREATE OR REPLACE FUNCTION assign_fever()
 RETURNS TRIGGER AS $$
@@ -211,20 +216,96 @@ IF (NEW.temp >= 37.5) THEN
 NEW.fever := TRUE;
 ELSE
 NEW.fever := FALSE;
-END IF; 
+END IF;
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER assign_fever_trig BEFORE
 INSERT
-    OR
+       OR
 UPDATE
 ON
-    Health_Declaration FOR EACH ROW EXECUTE PROCEDURE assign_fever()
+       Health_Declaration FOR EACH ROW EXECUTE PROCEDURE assign_fever()
 ;
 
 /**
 * END
 */
-	
+/**
+* Routine to add sessions
+*/
+CREATE OR REPLACE FUNCTION add_random_sessions(n INTEGER)
+RETURNS TABLE(participant_id INTEGER,
+			man_id INTEGER,
+			booker_id INTEGER,
+			room_name VARCHAR(50),
+			room_no INTEGER,
+			floor_no INTEGER,
+			time_of_booking TIMESTAMP)
+AS
+$$
+BEGIN
+RETURN QUERY
+WITH rand_id AS
+     (
+            SELECT
+                   eid participant_id
+            FROM
+                   employees
+            ORDER BY
+                   random()
+			LIMIT n
+     )
+   , rand_man_id AS
+     (
+            SELECT
+                   eid man_id
+            FROM
+                   manager
+            ORDER BY
+                   random()
+			LIMIT n
+     )
+   , rand_book_id AS
+     (
+            select
+                   eid booker_id
+            FROM
+                   junior
+            ORDER BY
+                   random()
+			LIMIT n
+     )
+   , rand_room AS
+     (
+            select
+                   rname room_name
+                 , room room_no
+                 , floor floor_no
+            from
+                   meeting_rooms
+            ORDER BY
+                   random()
+			LIMIT n
+     )
+   , get_timestamp AS
+     (
+            SELECT DISTINCT
+                   generate_series( (current_date)::timestamp, (current_date + interval '1 MONTH')::timestamp, interval '1 hour' ) timestamps
+			LIMIT n
+     )
+ 
+SELECT DISTINCT *
+FROM
+       rand_id
+     , rand_man_id
+     , rand_book_id
+     , rand_room
+	 , get_timestamp
+LIMIT n;
+	 
+END;
+$$ LANGUAGE plpgsql;
+/**
+* End generate sessions
+*/
