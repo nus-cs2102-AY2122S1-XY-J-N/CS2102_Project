@@ -176,30 +176,31 @@ $$ Language SQL;
 */
 CREATE OR REPLACE PROCEDURE declare_health
 (
-IN eid_input        INTEGER
-,  date_input DATE
-, temperature_input DECIMAL
+IN eid_in  INTEGER
+,  date_in DATE
+, temp_in DECIMAL
 )
 AS
 $$
 BEGIN
 INSERT INTO Health_Declaration
     ( eid
-      , DATE
+      , date
       , temp
     )
     VALUES
-    ( eid
-      , DATE
-      , temperature
+    ( $1
+      , $2
+      , $3
     )
-	ON CONFLICT(eid)
-		DO UPDATE SET temp = $3 
-			WHERE eid = $1 AND date = $2
+	ON CONFLICT(eid, date)
+		DO UPDATE 
+		SET temp = $3
+			WHERE Health_Declaration.eid = $1 
+			AND 
+			Health_Declaration.date = $2
 ;
-
-END IF;
-END
+END;
 $$ Language plpgsql;
 
 --trigger to assign fever
