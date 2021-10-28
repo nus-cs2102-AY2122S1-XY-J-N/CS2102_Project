@@ -68,3 +68,14 @@ CALL declare_health (18, current_date, 36.0);
 CALL declare_health (19, current_date, 37.6);
 CALL declare_health (20, current_date, 36.2);
 
+--use in intervals of 5 for efficient generation
+CALL add_random_sessions(5);
+CALL add_random_sessions(5);
+CALL add_random_sessions(5);
+CALL add_random_sessions(5);
+CALL add_random_sessions(5);
+CALL add_random_sessions(5);
+CALL add_random_sessions(5);
+CALL add_random_sessions(5);
+CALL add_random_sessions(5);
+
