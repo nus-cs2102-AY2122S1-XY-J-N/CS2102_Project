@@ -425,7 +425,7 @@ FROM
 GROUP BY
        endo.eid
 ORDER BY
-       endo.eid
+       endo.nDays DESC
 ;
 
 END;
