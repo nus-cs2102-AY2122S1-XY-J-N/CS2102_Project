@@ -374,32 +374,62 @@ $$ LANGUAGE plpgsql;
 /**
 * End of INSERT sessions PROCEDURE
 */
-
 /**
- * Start of non-compliance PROCEDURE
- */
+* Start of non-compliance PROCEDURE
+*/
 CREATE OR REPLACE FUNCTION non_compliance(sDate DATE, eDate DATE)
-RETURNS TABLE (eid INTEGER, nDays BIGINT)
+RETURNS TABLE (eid                              INTEGER, nDays BIGINT)
 AS $$
 BEGIN
 RETURN QUERY
 -- generate all possible dates
-WITH gen_date AS (
-SELECT date::date FROM generate_series($1, $2, '1 day'::interval) date
-),
+WITH gen_date AS
+     (
+            SELECT
+                   date::date
+            FROM
+                   generate_series($1, $2, '1 day'::interval) date
+     )
+   ,
+      -- generate all possible eid | dates combination
+     eid_date AS
+     (
+            SELECT
+                   e.eid
+                 , gd.date
+            FROM
+                   Employees e
+                 , gen_date  gd
+     )
+   ,
+      -- get all eid and dates not declared
+     eid_not_declared_on AS
+     (
+            SELECT
+                   ed.eid
+                 , ed.date
+            FROM
+                   eid_date ed
+            EXCEPT
+            SELECT
+                   hd.eid
+                 , hd.date
+            FROM
+                   Health_Declaration hd
+     )
+SELECT
+       endo.eid
+     , COUNT(endo.date) nDays
+FROM
+       eid_not_declared_on endo
+GROUP BY
+       endo.eid
+ORDER BY
+       endo.eid
+;
 
--- generate all possible eid | dates combination
-eid_date AS (SELECT e.eid, gd.date FROM Employees e, gen_date gd),
-
--- get all eid and dates not declared
-eid_not_declared_on AS (
-SELECT ed.eid, ed.date FROM eid_date ed
-EXCEPT
-SELECT hd.eid, hd.date FROM Health_Declaration hd)
-
-SELECT endo.eid , COUNT(endo.date) nDays FROM eid_not_declared_on endo GROUP BY endo.eid ORDER BY endo.eid;
 END;
 $$ LANGUAGE plpgsql;
- /*
-  * End of non-compliance PROCEDURE
-  */
+/*
+* End of non-compliance PROCEDURE
+*/
