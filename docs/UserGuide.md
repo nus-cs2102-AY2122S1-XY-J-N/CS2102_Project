@@ -13,13 +13,13 @@ xx
 `CALL remove_department (target_did INTEGER);`
 
 ### Adding an employee
-`CALL add_employee(ename VARCHAR(50), hp_contact INTEGER, kind VARCHAR(7), did INTEGER);`
+`CALL add_employee(ename VARCHAR(50), hp_contact VARCHAR(50), kind VARCHAR(7), did INTEGER);`
 
 This generates a unique eid for the employee which follows an  increasing sequence starting from 1, and also a unique email which concatenates their initials to their eid, followed by the company's email. 
 
 For instance, assume that the phone number and did are valid. 
 
-Then  `CALL add_employee('Abraham Benedict Cumberbatch Donkey', 12345678, 'Senior', 69);` would result in an email `ABCD2@gsnail.com`, if the employee has eid 2.
+Then  `CALL add_employee('Abraham Benedict Cumberbatch Donkey', '12345678', 'Senior', 69);` would result in an email `ABCD2@gsnail.com`, if the employee has eid 2.
 
 ### Removing an employee
 `CALL remove_employee(IN eid INTEGER, resigned_date DATE);`
