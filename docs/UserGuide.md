@@ -32,6 +32,9 @@ This call simply tags a date in the resigned_date attribute of the employee with
 ### Changing room capacity
 `CALL change_capacity(floor INTEGER, room_num INTEGER, capacity INTEGER, date DATE)`
 
+### Checking non-compliance
+`SELECT * FROM non_compliance(sDate DATE, eDate DATE)`
+
 ### Declaring health
 `CALL declare_health (eid INTEGER, date DATE, temperature DECIMAL);`
 
