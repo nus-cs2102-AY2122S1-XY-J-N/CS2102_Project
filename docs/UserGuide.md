@@ -38,6 +38,11 @@ This call simply tags a date in the resigned_date attribute of the employee with
 ### Declaring health
 `CALL declare_health (eid INTEGER, date DATE, temperature DECIMAL);`
 
+### Contact Tracing
+Returns list of employees in close contact with some eid. eid represents the employee with a fever.
+Note that this function should be implemented as a trigger with health declaration.
+`CALL SELECT * FROM contact_tracing(eid INTEGER)`
+
 ## List of admin procedures
 Generating random sessions data with today's date - 1 month from now as timestamp.
 The input corresponds to how many rows to add

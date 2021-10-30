@@ -13,10 +13,10 @@ CREATE OR REPLACE PROCEDURE add_department
 AS
 $$
 INSERT INTO departments VALUES
-       (did
-            , dname
-       )
-       $$ LANGUAGE sql
+    (did
+      , dname
+    )
+    $$ LANGUAGE sql
 ;
 
 CREATE OR REPLACE PROCEDURE remove_department
@@ -27,9 +27,9 @@ AS
 $$
 DELETE
 FROM
-       departments
+    departments
 WHERE
-       did = target_did $$ LANGUAGE sql
+    did = target_did $$ LANGUAGE sql
 ;
 
 /**
@@ -48,18 +48,18 @@ room_name  VARCHAR(50)
 AS
 $$
 INSERT INTO Meeting_Rooms
-       (rname
-            , room
-            , floor
-            , did
-       )
-       values
-       (room_name
-            , room_num
-            , floor_num
-            , did
-       )
-       $$ LANGUAGE sql
+    (rname
+      , room
+      , floor
+      , did
+    )
+    values
+    (room_name
+      , room_num
+      , floor_num
+      , did
+    )
+    $$ LANGUAGE sql
 ;
 
 CREATE OR REPLACE PROCEDURE change_capacity
@@ -72,13 +72,13 @@ floor      INTEGER
 AS
 $$
 insert into Updates values
-       (date
-            , NULL
-            , capacity
-            , room_num
-            , floor
-       )
-       $$ LANGUAGE sql
+    (date
+      , NULL
+      , capacity
+      , room_num
+      , floor
+    )
+    $$ LANGUAGE sql
 ;
 
 /**
@@ -97,18 +97,18 @@ IN ename     VARCHAR(50)
 AS
 $$
 INSERT INTO employees
-       ( ename
-            , hp_contact
-            , kind
-            , did
-       )
-       VALUES
-       ( ename
-            , hp_contact
-            , kind
-            , did
-       )
-       $$ LANGUAGE SQL
+    ( ename
+      , hp_contact
+      , kind
+      , did
+    )
+    VALUES
+    ( ename
+      , hp_contact
+      , kind
+      , did
+    )
+    $$ LANGUAGE SQL
 ;
 
 -- extracting initials for email generation
@@ -150,7 +150,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER assign_email_add BEFORE
 INSERT
 ON
-       employees FOR EACH ROW EXECUTE FUNCTION assign_email()
+    employees FOR EACH ROW EXECUTE FUNCTION assign_email()
 ;
 
 CREATE OR REPLACE PROCEDURE remove_employee
@@ -161,10 +161,10 @@ IN eid          INTEGER
 AS
 $$
 UPDATE
-       employees
-SET    resigned_date = $2
+    employees
+SET resigned_date = $2
 WHERE
-       eid = $1
+    eid = $1
 ;
 
 $$ Language SQL;
@@ -184,26 +184,26 @@ AS
 $$
 BEGIN
 INSERT INTO Health_Declaration
-       ( eid
-            , date
-            , temp
-       )
-       VALUES
-       ( $1
-            , $2
-            , $3
-       )
+    ( eid
+      , date
+      , temp
+    )
+    VALUES
+    ( $1
+      , $2
+      , $3
+    )
 ON
-       CONFLICT
-       (eid
-            , date
-       )
-       DO
+    CONFLICT
+    (eid
+      , date
+    )
+    DO
 UPDATE
-SET    temp = $3
+SET temp = $3
 WHERE
-       Health_Declaration.eid      = $1
-       AND Health_Declaration.date = $2
+    Health_Declaration.eid      = $1
+    AND Health_Declaration.date = $2
 ;
 
 END;
@@ -222,10 +222,10 @@ END;
 $$ LANGUAGE plpgsql;
 CREATE TRIGGER assign_fever_trig BEFORE
 INSERT
-       OR
+    OR
 UPDATE
 ON
-       Health_Declaration FOR EACH ROW EXECUTE PROCEDURE assign_fever()
+    Health_Declaration FOR EACH ROW EXECUTE PROCEDURE assign_fever()
 ;
 
 /**
@@ -247,62 +247,57 @@ $$
 BEGIN
 RETURN QUERY
 WITH rand_id AS
-     (
-            SELECT
-                   eid participant_id
-            FROM
-                   employees
-            ORDER BY
-                   random()
-            LIMIT  n
-     )
-   , rand_man_id AS
-     (
-            SELECT
-                   eid man_id
-            FROM
-                   manager
-            ORDER BY
-                   random()
-            LIMIT  n
-     )
-   , rand_book_id AS
-     (
-            select
-                   eid booker_id
-            FROM
-                   junior
-            ORDER BY
-                   random()
-            LIMIT  n
-     )
-   , rand_room AS
-     (
-            select
-                   rname room_name
-                 , room  room_no
-                 , floor floor_no
-            from
-                   meeting_rooms
-            ORDER BY
-                   random()
-            LIMIT  n
-     )
-   , get_timestamp AS
-     (
-            SELECT DISTINCT
-                   generate_series( (current_date)::timestamp, (current_date + interval '1 MONTH')::timestamp, interval '1 hour' ) timestamps
-            LIMIT  n
-     )
+    (
+        SELECT
+            eid participant_id
+        FROM
+            employees
+        ORDER BY
+            random()
+        LIMIT n
+    )
+  , rand_man_id AS
+    (
+        SELECT
+            eid man_id
+        FROM
+            manager
+        ORDER BY
+            random()
+        LIMIT n
+    )
+  , rand_book_id AS
+    (
+        select
+            eid booker_id
+        FROM
+            junior
+        ORDER BY
+            random()
+        LIMIT n
+    )
+  , rand_room AS
+    (
+        select
+            rname room_name , room room_no , floor floor_no
+        from
+            meeting_rooms
+        ORDER BY
+            random()
+        LIMIT n
+    )
+  , get_timestamp AS
+    (
+        SELECT DISTINCT
+            generate_series( (current_date)::timestamp, (current_date + interval '1 MONTH')::timestamp, interval '1 hour' ) timestamps
+        LIMIT n
+    )
 SELECT DISTINCT
-       *
+    *
 FROM
-       rand_id
-     , rand_man_id
-     , rand_book_id
-     , rand_room
-     , get_timestamp
-LIMIT  n
+    rand_id , rand_man_id , rand_book_id , rand_room
+  , get_timestamp
+LIMIT n
 ;
 
 END;
@@ -319,23 +314,23 @@ AS
 $$
 BEGIN
 INSERT INTO Sessions
-       (participant_eid
-            , approving_manager_eid
-            , booker_eid
-            , room
-            , floor
-            , time
-            , rname
-       )
-       VALUES
-       ($1
-            , $2
-            , $3
-            , $4
-            , $5
-            , $6
-            , $7
-       )
+    (participant_eid
+      , approving_manager_eid
+      , booker_eid
+      , room
+      , floor
+      , time
+      , rname
+    )
+    VALUES
+    ($1
+      , $2
+      , $3
+      , $4
+      , $5
+      , $6
+      , $7
+    )
 ;
 
 END;
@@ -346,27 +341,22 @@ AS
 $$
 BEGIN
 INSERT INTO Sessions
-       (participant_eid
-            , approving_manager_eid
-            , booker_eid
-            , room
-            , floor
-            , time
-            , rname
-       )
+    (participant_eid
+      , approving_manager_eid
+      , booker_eid
+      , room
+      , floor
+      , time
+      , rname
+    )
 SELECT
-       participant_id
-     , man_id
-     , booker_id
-     , room_no
-     , floor_no
-     , time_of_booking
-     , room_name
+    participant_id , man_id          , booker_id , room_no
+  , floor_no       , time_of_booking , room_name
 FROM
-       generate_random_sessions_table(how_many_to_insert)
+    generate_random_sessions_table(how_many_to_insert)
 ON
-       CONFLICT(participant_eid, time, booker_eid, room, floor) -- primary key
-       DO NOTHING                                               -- strictly  for dummy data
+    CONFLICT(participant_eid, time, booker_eid, room, floor) -- primary key
+    DO NOTHING                                               -- strictly  for dummy data
 ;
 
 END;
@@ -384,48 +374,43 @@ BEGIN
 RETURN QUERY
 -- generate all possible dates
 WITH gen_date AS
-     (
-            SELECT
-                   date::date
-            FROM
-                   generate_series($1, $2, '1 day'::interval) date
-     )
-   ,
-      -- generate all possible eid | dates combination
-     eid_date AS
-     (
-            SELECT
-                   e.eid
-                 , gd.date
-            FROM
-                   Employees e
-                 , gen_date  gd
-     )
-   ,
-      -- get all eid and dates not declared
-     eid_not_declared_on AS
-     (
-            SELECT
-                   ed.eid
-                 , ed.date
-            FROM
-                   eid_date ed
-            EXCEPT
-            SELECT
-                   hd.eid
-                 , hd.date
-            FROM
-                   Health_Declaration hd
-     )
+    (
+        SELECT
+            date::date
+        FROM
+            generate_series($1, $2, '1 day'::interval) date
+    )
+  ,
+     -- generate all possible eid | dates combination
+    eid_date AS
+    (
+        SELECT
+            e.eid , gd.date
+        FROM
+            Employees e , gen_date gd
+    )
+  ,
+     -- get all eid and dates not declared
+    eid_not_declared_on AS
+    (
+        SELECT
+            ed.eid , ed.date
+        FROM
+            eid_date ed
+        EXCEPT
+        SELECT
+            hd.eid , hd.date
+        FROM
+            Health_Declaration hd
+    )
 SELECT
-       endo.eid
-     , COUNT(endo.date) nDays
+    endo.eid , COUNT(endo.date) nDays
 FROM
-       eid_not_declared_on endo
+    eid_not_declared_on endo
 GROUP BY
-       endo.eid
+    endo.eid
 ORDER BY
-       endo.nDays DESC
+    endo.nDays DESC
 ;
 
 END;
@@ -433,3 +418,39 @@ $$ LANGUAGE plpgsql;
 /*
 * End of non-compliance PROCEDURE
 */
+/**
+* Start of contact tracing procedure
+*/
+CREATE OR REPLACE FUNCTION contact_tracing(f_eid INTEGER)
+RETURNS TABLE (eid                               INTEGER)
+AS
+$$
+DECLARE curr_date TIMESTAMP := current_timestamp;
+BEGIN
+RETURN QUERY
+--get all meetings that fever guy joined, more specifically the time, booker_eid, room and floor
+WITH get_meetings AS
+    (
+        SELECT
+            s.booker_eid, s.time, s.room, s.floor
+        FROM
+            Sessions s
+        WHERE
+            s.participant_eid = $1
+    )
+--get participants list from PAST 3 meeting dates
+-- simply consider range of 3 days --> current_timestamp - interval '3 days' to now.
+SELECT DISTINCT
+    s.participant_eid
+FROM
+    get_meetings gm, Sessions s
+WHERE
+    gm.time >= curr_date - INTERVAL '3 days'
+	AND s.booker_eid = gm.booker_eid
+    AND s.participant_eid <> $1	-- dont want fever fella
+	AND gm.room = s.room
+	AND gm.floor = s.floor
+;
+
+END;
+$$ LANGUAGE plpgsql;
