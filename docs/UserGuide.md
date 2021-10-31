@@ -43,6 +43,9 @@ Returns list of employees in close contact with some eid. eid represents the emp
 Note that this function should be implemented as a trigger with health declaration.
 `CALL SELECT * FROM contact_tracing(eid INTEGER)`
 
+### View future meeting
+`view_future_meeting(sDate DATE, eid INTEGER)`
+
 ## List of admin procedures
 Generating random sessions data with today's date - 1 month from now as timestamp.
 The input corresponds to how many rows to add
