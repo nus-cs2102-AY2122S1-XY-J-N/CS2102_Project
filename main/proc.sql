@@ -445,12 +445,37 @@ SELECT DISTINCT
 FROM
     get_meetings gm, Sessions s
 WHERE
-    gm.time >= curr_date - INTERVAL '3 days'
-	AND s.booker_eid = gm.booker_eid
-    AND s.participant_eid <> $1	-- dont want fever fella
-	AND gm.room = s.room
-	AND gm.floor = s.floor
+    gm.time               >= curr_date - INTERVAL '3 days'
+    AND s.booker_eid       = gm.booker_eid
+    AND s.participant_eid <> $1 -- dont want fever fella
+    AND gm.room            = s.room
+    AND gm.floor           = s.floor
 ;
 
 END;
 $$ LANGUAGE plpgsql;
+/**
+* Start of view future meeting procedure
+*/
+CREATE OR REPLACE FUNCTION view_future_meeting(sDate date, eid INTEGER)
+RETURNS TABLE(floor INTEGER, room INTEGER, dateStart TIMESTAMP)
+AS
+$$
+DECLARE startTimestamp TIMESTAMP := '';
+BEGIN
+RETURN QUERY
+startTimestamp := sDate::TIMESTAMP --casts start date to timestamp
+SELECT
+    s.floor, s.room, s.time
+FROM
+    Sessions s
+WHERE
+    s.time  >= startTimestamp
+    AND s.participant_eid = $2
+;
+
+END;
+$$ LANGUAGE plpgsql;
+/**
+* End of view future meeting procedure
+*/
