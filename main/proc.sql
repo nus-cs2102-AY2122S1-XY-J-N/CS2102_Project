@@ -425,7 +425,7 @@ CREATE OR REPLACE FUNCTION contact_tracing(f_eid INTEGER)
 RETURNS TABLE (eid                               INTEGER)
 AS
 $$
-DECLARE curr_date TIMESTAMP := current_timestamp;
+DECLARE curr_date TIMESTAMP := current_date::TIMESTAMP;	--gets today's date at 00:00
 BEGIN
 RETURN QUERY
 --get all meetings that fever guy joined, more specifically the time, booker_eid, room and floor
@@ -457,21 +457,20 @@ $$ LANGUAGE plpgsql;
 /**
 * Start of view future meeting procedure
 */
-CREATE OR REPLACE FUNCTION view_future_meeting(sDate date, eid INTEGER)
-RETURNS TABLE(floor INTEGER, room INTEGER, dateStart TIMESTAMP)
-AS
-$$
-DECLARE startTimestamp TIMESTAMP := '';
+CREATE OR REPLACE FUNCTION view_future_meeting(sDate DATE, eid INTEGER)
+RETURNS TABLE(floor                                  INTEGER, room INTEGER, dateStart TIMESTAMP)
+AS $$
+DECLARE startTimestamp TIMESTAMP := $1::TIMESTAMP; -- casts date to timestamp
 BEGIN
 RETURN QUERY
-startTimestamp := sDate::TIMESTAMP --casts start date to timestamp
 SELECT
     s.floor, s.room, s.time
 FROM
     Sessions s
 WHERE
-    s.time  >= startTimestamp
+    s.time               >= startTimestamp
     AND s.participant_eid = $2
+	ORDER BY s.time ASC
 ;
 
 END;
