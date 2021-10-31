@@ -58,8 +58,8 @@ CREATE TABLE Health_Declaration
 CREATE TABLE Meeting_Rooms
        (
               rname VARCHAR(50)
-            , room  INTEGER
-            , floor INTEGER
+            , floor  INTEGER
+            , room INTEGER
             , did   INTEGER REFERENCES Departments(did)
             , PRIMARY KEY (floor, room)
        )
@@ -67,14 +67,14 @@ CREATE TABLE Meeting_Rooms
 
 CREATE TABLE Updates
        (
-                            date DATE
-            , approving_eid INTEGER DEFAULT NULL
+              date DATE
+            , approving_eid INTEGER
             , --trigger needed to check if eid is a manager
               new_cap INTEGER CHECK (new_cap > 0)
-            , room    INTEGER
-            , floor   INTEGER
-            , PRIMARY KEY (date, approving_eid, room, floor)
-            , FOREIGN KEY (room, floor) REFERENCES Meeting_Rooms (room, floor)
+            , floor    INTEGER
+            , room   INTEGER
+            , PRIMARY KEY (date, approving_eid, floor, room)
+            , FOREIGN KEY (floor, room) REFERENCES Meeting_Rooms (floor, room)
        )
 ;
 
@@ -88,17 +88,16 @@ CREATE TABLE Sessions
                --check here
               booker_eid INT REFERENCES Employees(eid)
             ,
-               --the booker  (trigger)
-              room INTEGER NOT NULL
-            ,
-               --must include room
               floor INTEGER NOT NULL
-             ,      time TIMESTAMP
+            
+              ,room INTEGER NOT NULL
+             ,datetime TIMESTAMP
+             
             , rname VARCHAR(50)
               -- must  include room
-             , FOREIGN KEY (room, floor) REFERENCES Meeting_Rooms (room, floor)
-            , PRIMARY KEY( participant_eid, time, booker_eid, room, floor )
-			, CHECK (to_char(time, 'YYYY:DD:HH24:MI:SS') LIKE '%00:00') -- check that ends in an hour
+             , FOREIGN KEY (floor, room) REFERENCES Meeting_Rooms (room, floor)
+            , PRIMARY KEY(participant_eid, datetime, booker_eid, room, floor )
+			, CHECK (to_char(datetime, 'YYYY:DD:HH24:MI:SS') LIKE '%00:00') -- check that ends in an hour
        )
 ;
 

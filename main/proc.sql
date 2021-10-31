@@ -1,14 +1,35 @@
 /**
-* SQL  or  PL/pgSQL routines of implementation
-**/
---basic
+ * TRIGGERS
+ */
+
+ --trigger to assign fever
+CREATE OR REPLACE FUNCTION assign_fever()
+RETURNS TRIGGER AS $$
+BEGIN
+IF (NEW.temp >= 37.5) THEN
+NEW.fever := TRUE;
+ELSE
+NEW.fever := FALSE;
+END IF;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER assign_fever_trig BEFORE
+INSERT
+       OR
+UPDATE
+ON
+       health_declaration FOR EACH ROW EXECUTE PROCEDURE assign_fever()
+;
+
+
 /**
-* Adding department, remove department
+* BASIC ROUTINES
 */
 CREATE OR REPLACE PROCEDURE add_department
 (
   IN did   INTEGER
-, IN dname VARCHAR(50)
+, IN dname varchar(50)
 )
 AS
 $$
@@ -16,7 +37,7 @@ INSERT INTO departments VALUES
        (did
             , dname
        )
-       $$ LANGUAGE sql
+       $$ LANGUAGE SQL
 ;
 
 CREATE OR REPLACE PROCEDURE remove_department
@@ -29,18 +50,12 @@ DELETE
 FROM
        departments
 WHERE
-       did = target_did $$ LANGUAGE sql
+       did = target_did $$ LANGUAGE SQL
 ;
 
-/**
-* End
-*/
-/**
-* Routines to add room, change capacity
-*/
 CREATE OR REPLACE PROCEDURE add_room
 (
-room_name  VARCHAR(50)
+room_name  varchar(50)
 ,floor_num INTEGER
 , room_num INTEGER
 , did      INTEGER
@@ -49,49 +64,42 @@ AS
 $$
 INSERT INTO Meeting_Rooms
        (rname
-            , room
             , floor
+            , room
             , did
        )
        values
        (room_name
-            , room_num
             , floor_num
+            , room_num
             , did
        )
-       $$ LANGUAGE sql
+insert into Updates
+       $$ LANGUAGE SQL
 ;
 
-CREATE OR REPLACE PROCEDURE change_capacity
-(
-floor      INTEGER
-, room_num INTEGER
-, capacity INTEGER
-,          date DATE
-)
-AS
-$$
-insert into Updates values
-       (date
-            , NULL
-            , capacity
-            , room_num
-            , floor
-       )
-       $$ LANGUAGE sql
-;
+-- Assume when room added no entry exists in [Updates]
+CREATE OR REPLACE PROCEDURE change_capacity (manager_eid INTEGER, floor INTEGER , room INTEGER , capacity INTEGER , date DATE) AS $$
+BEGIN
+IF EXISTS (select 1 from Manager where eid = manager_eid) THEN
+       INSERT INTO updates
+       VALUES (date , manager_eid,
+                               floor,
+                               room,
+                               capacity) ON CONFLICT (floor, room)
+       DO UPDATE SET new_cap = capacity;
+ELSE 
+       RAISE EXCEPTION 'You are not a manager';
+END IF;
+END
+$$ LANGUAGE plpgsql;
 
-/**
-* End
-*/
-/**
-* Routines for adding employee
-*/
+
 CREATE OR REPLACE PROCEDURE add_employee
 (
-IN ename     VARCHAR(50)
-, hp_contact VARCHAR(50)
-, kind       VARCHAR(7)
+IN ename     varchar(50)
+, hp_contact varchar(50)
+, kind       varchar(7)
 , did        INTEGER
 )
 AS
@@ -111,47 +119,6 @@ INSERT INTO employees
        $$ LANGUAGE SQL
 ;
 
--- extracting initials for email generation
-DROP
-FUNCTION
-IF EXISTS get_name_initials( VARCHAR(50));
-CREATE OR REPLACE FUNCTION get_name_initials
-(
-VARCHAR(50)
-) RETURNS VARCHAR(10)
-AS
-$$
-DECLARE
-initials VARCHAR(50) := '';
-letter   VARCHAR     := '';
-BEGIN
-FOREACH letter IN ARRAY string_to_array($1, ' ')
-LOOP
-initials := initials
-|| SUBSTR(letter, 1, 1);
-END LOOP;
-RETURN initials;
-END;
-$$ LANGUAGE plpgsql;
--- create email and assign for employee
-CREATE OR REPLACE FUNCTION assign_email()
-RETURNS TRIGGER
-AS
-$$
-DECLARE
-Eabbrv   VARCHAR(10) := '';
-EmailEnd VARCHAR(11) := '@gsnail.com';
-BEGIN
-Eabbrv    := get_name_initials(NEW.ename);
-NEW.email := CONCAT(Eabbrv, NEW.eid, EmailEnd);
-RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-CREATE OR REPLACE TRIGGER assign_email_add BEFORE
-INSERT
-ON
-       employees FOR EACH ROW EXECUTE FUNCTION assign_email()
-;
 
 CREATE OR REPLACE PROCEDURE remove_employee
 (
@@ -167,12 +134,113 @@ WHERE
        eid = $1
 ;
 
-$$ Language SQL;
+$$ LANGUAGE SQL;
+
+
 /**
-* End
-*/
+ * CORE ROUTINES
+ */
+
+CREATE OR REPLACE PROCEDURE book_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer) AS $$
+DECLARE
+hasFever boolean;
+bookingTime time;
+n integer := end_hr - start_hr;
+j integer := end_hr - start_hr;
+bookingDatetime timestamp;
+isBooked boolean := false;
+
+BEGIN
+
+IF NOT EXISTS (select 1 from Manager where eid = booker_eid
+                            UNION
+                        select 1 from Senior where eid = booker_eid) THEN
+       RAISE EXCEPTION 'eid % is not a senior or manager', booker_eid;
+END IF;
+
+--If employee is trying to book but didn't declare temperature today, reject his booking
+select fever into hasFever
+from Health_Declaration
+where eid = booker_eid and date = CURRENT_DATE;
+IF NOT FOUND THEN
+       RAISE EXCEPTION 'eid % no health declaration on %', booker_eid, CURRENT_DATE;
+END IF;
+
+--Employee declared temp but has fever today
+IF (hasFever IS TRUE) THEN
+       RAISE EXCEPTION 'You have fever today, no booking allowed';
+END IF;
+
+--Check if room is booked
+bookingTime := make_time(start_hr,0,0);
+bookingDatetime := date + bookingTime;
+LOOP
+       exit when n = 0;
+       IF EXISTS (
+              select 1
+              from Sessions
+              where floor = floor and room = room 
+                     and datetime = bookingDatetime + make_interval(hours => (n-1))
+              )
+       THEN isBooked := true;
+       END IF;       
+       n := n-1;
+END LOOP;
+
+IF (isBooked IS TRUE) THEN RAISE EXCEPTION 'time slot unavailable';
+END IF;
+
+--All checks passed, book the slots
+LOOP
+       exit when j = 0;
+       INSERT INTO Sessions (approving_manager_eid, booker_eid, participant_eid, floor, room, datetime)
+              VALUES (null, booker_eid, booker_eid, floor, room, bookingDatetime + make_interval(hours => (j-1)));
+       j := j-1;
+END LOOP;
+
+END;
+$$ LANGUAGE PLPGSQL;
+
+
+CREATE OR REPLACE PROCEDURE unbook_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer) AS $$
+DECLARE
+booking_time time := make_interval(start_hr,0,0);
+booking_datetime timestamp;
+bcheck boolean := true;
+n int := end_hr - start_hr;
+j int := end_hr - start_hr;
+BEGIN
+booking_datetime := date + booking_time;
+LOOP
+       EXIT WHEN n=0;
+       IF NOT EXISTS (
+              select 1
+              from Sessions
+              where floor = floor and room = room and datetime = booking_datetime + make_interval(hours => (n-1))
+                     and booker_eid = booker_eid
+       )
+       THEN bcheck := false;
+       END IF;
+       n := n-1;
+END LOOP;
+
+IF (bcheck IS FALSE) THEN RAISE EXCEPTION 'Some bookings do not exist for the date and time range, or eid does not match';
+END IF;
+
+LOOP
+       EXIT WHEN j=0;
+       DELETE FROM Sessions
+       WHERE floor = floor and room = room and datetime = booking_datetime + make_interval(hours => (j-1))
+              and booker_eid = booker_eid;
+       j := j-1;
+END LOOP;
+
+END;
+$$ LANGUAGE plpgsql;
+
+
 /**
-* Routines for declaring health
+* HEALTH ROUTINES
 */
 CREATE OR REPLACE PROCEDURE declare_health
 (
@@ -207,38 +275,59 @@ WHERE
 ;
 
 END;
-$$ Language plpgsql;
---trigger to assign fever
-CREATE OR REPLACE FUNCTION assign_fever()
-RETURNS TRIGGER AS $$
+$$ LANGUAGE plpgsql;
+
+
+ /**
+  * UTILITY ROUTINES FOR DATA GENERATION
+  */
+
+-- extracting initials for email generation
+CREATE OR REPLACE FUNCTION get_name_initials
+(
+varchar(50)
+) RETURNS varchar(10)
+AS
+$$
+DECLARE
+initials VARCHAR(50) := '';
+letter   VARCHAR     := '';
 BEGIN
-IF (NEW.temp >= 37.5) THEN
-NEW.fever := TRUE;
-ELSE
-NEW.fever := FALSE;
-END IF;
+FOREACH letter IN ARRAY string_to_array($1, ' ')
+LOOP
+initials := initials
+|| SUBSTR(letter, 1, 1);
+END LOOP;
+RETURN initials;
+END;
+$$ LANGUAGE plpgsql;
+-- create email and assign for employee
+CREATE OR REPLACE FUNCTION assign_email()
+RETURNS TRIGGER
+AS
+$$
+DECLARE
+Eabbrv   VARCHAR(10) := '';
+EmailEnd VARCHAR(11) := '@gsnail.com';
+BEGIN
+Eabbrv    := get_name_initials(NEW.ename);
+NEW.email := CONCAT(Eabbrv, NEW.eid, EmailEnd);
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-CREATE TRIGGER assign_fever_trig BEFORE
+CREATE OR REPLACE TRIGGER assign_email_add BEFORE
 INSERT
-       OR
-UPDATE
 ON
-       Health_Declaration FOR EACH ROW EXECUTE PROCEDURE assign_fever()
+       employees FOR EACH ROW EXECUTE FUNCTION assign_email()
 ;
 
-/**
-* END
-*/
-/**
-* Routine to add sessions
-*/
+
+--Routine to add sessions
 CREATE OR REPLACE FUNCTION generate_random_sessions_table(n INTEGER)
-RETURNS TABLE(participant_id                                INTEGER,
+RETURNS table(participant_id                                INTEGER,
 man_id                                                      INTEGER,
 booker_id                                                   INTEGER,
-room_name                                                   VARCHAR(50),
+room_name                                                   varchar(50),
 room_no                                                     INTEGER,
 floor_no                                                    INTEGER,
 time_of_booking                                             TIMESTAMP)
@@ -307,14 +396,10 @@ LIMIT  n
 
 END;
 $$ LANGUAGE plpgsql;
-/**
-* End generate sessions FUNCTION
-*/
-/**
-* Start of insert into sessions  PROCEDURE
-*/
+
+
 -- adding normal sessions
-CREATE OR REPLACE PROCEDURE add_sessions(participant_eid INTEGER, approving_manager_eid INTEGER, booker_eid INTEGER, room INTEGER, floor INTEGER, time_in TIMESTAMP, rname VARCHAR(50))
+CREATE OR REPLACE PROCEDURE add_sessions(participant_eid INTEGER, approving_manager_eid INTEGER, booker_eid INTEGER, room INTEGER, floor INTEGER, time_in TIMESTAMP, rname varchar(50))
 AS
 $$
 BEGIN
@@ -371,8 +456,3 @@ ON
 
 END;
 $$ LANGUAGE plpgsql;
-/**
-* End of INSERT sessions PROCEDURE
-*/
-
-
