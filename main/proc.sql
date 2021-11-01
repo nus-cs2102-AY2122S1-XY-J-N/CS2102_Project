@@ -14,7 +14,7 @@ END IF;
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-CREATE TRIGGER assign_fever_trig BEFORE
+CREATE OR REPLACE TRIGGER assign_fever_trig BEFORE
 INSERT
        OR
 UPDATE
@@ -74,7 +74,6 @@ INSERT INTO Meeting_Rooms
             , room_num
             , did
        )
-insert into Updates
        $$ LANGUAGE SQL
 ;
 
@@ -337,6 +336,28 @@ END;
 $$ LANGUAGE plpgsql;
 
 
+CREATE OR REPLACE FUNCTION view_booking_report (eid int, start_date date)
+RETURNS TABLE(floor int, room int, booking_datetime timestamp, is_approved boolean) AS $$
+DECLARE
+
+BEGIN
+       RETURN QUERY SELECT
+              floor,
+              room,
+              datetime,
+              CASE
+                     WHEN approving_manager_eid IS NULL THEN false
+                     ELSE true
+              END AS is_approved
+       FROM
+              Sessions
+       WHERE
+              booker_eid = eid AND datetime >= start_date::timestamp
+       ORDER BY
+              datetime ASC;
+END;
+$$ LANGUAGE plpgsql;
+
  /**
   * UTILITY ROUTINES FOR DATA GENERATION
   */
@@ -468,7 +489,7 @@ INSERT INTO Sessions
             , booker_eid
             , room
             , floor
-            , time
+            , datetime
             , rname
        )
        VALUES
@@ -495,7 +516,7 @@ INSERT INTO Sessions
             , booker_eid
             , room
             , floor
-            , time
+            , datetime
             , rname
        )
 SELECT
@@ -509,7 +530,7 @@ SELECT
 FROM
        generate_random_sessions_table(how_many_to_insert)
 ON
-       CONFLICT(participant_eid, time, booker_eid, room, floor) -- primary key
+       CONFLICT(participant_eid, datetime, booker_eid, room, floor) -- primary key
        DO NOTHING                                               -- strictly  for dummy data
 ;
 
