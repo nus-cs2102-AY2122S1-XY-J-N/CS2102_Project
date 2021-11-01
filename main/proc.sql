@@ -14,6 +14,7 @@ END IF;
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE TRIGGER assign_fever_trig BEFORE
 INSERT
        OR
@@ -96,9 +97,9 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE PROCEDURE add_employee
 (
-IN ename     varchar(50)
-, hp_contact varchar(50)
-, kind       varchar(7)
+IN ename     VARCHAR(50)
+, hp_contact VARCHAR(50)
+, kind       VARCHAR(7)
 , did        INTEGER
 )
 AS
@@ -276,6 +277,40 @@ WHERE
 END;
 $$ LANGUAGE plpgsql;
 
+-- contact tracing
+CREATE OR REPLACE FUNCTION contact_tracing(f_eid INTEGER)
+RETURNS TABLE (eid                               INTEGER)
+AS
+$$
+DECLARE curr_date TIMESTAMP := current_date::TIMESTAMP;	--gets today's date at 00:00
+BEGIN
+RETURN QUERY
+--get all meetings that fever guy joined, more specifically the time, booker_eid, room and floor
+WITH get_meetings AS
+    (
+        SELECT
+            s.booker_eid, s.time, s.room, s.floor
+        FROM
+            Sessions s
+        WHERE
+            s.participant_eid = $1
+    )
+--get participants list from PAST 3 meeting dates
+-- simply consider range of 3 days --> current_timestamp - interval '3 days' to now.
+SELECT DISTINCT
+    s.participant_eid
+FROM
+    get_meetings gm, Sessions s
+WHERE
+    gm.time               >= curr_date - INTERVAL '3 days'
+    AND s.booker_eid       = gm.booker_eid
+    AND s.participant_eid <> $1 -- dont want fever fella
+    AND gm.room            = s.room
+    AND gm.floor           = s.floor
+;
+
+END;
+$$ LANGUAGE plpgsql;
 
 /**
 * ADMIN ROUTINES
@@ -365,8 +400,8 @@ $$ LANGUAGE plpgsql;
 -- extracting initials for email generation
 CREATE OR REPLACE FUNCTION get_name_initials
 (
-varchar(50)
-) RETURNS varchar(10)
+VARCHAR(50)
+) RETURNS VARCHAR(10)
 AS
 $$
 DECLARE
@@ -375,12 +410,12 @@ letter   VARCHAR     := '';
 BEGIN
 FOREACH letter IN ARRAY string_to_array($1, ' ')
 LOOP
-initials := initials
-|| SUBSTR(letter, 1, 1);
+initials := initials || SUBSTR(letter, 1, 1);
 END LOOP;
 RETURN initials;
 END;
 $$ LANGUAGE plpgsql;
+
 -- create email and assign for employee
 CREATE OR REPLACE FUNCTION assign_email()
 RETURNS TRIGGER
@@ -395,6 +430,7 @@ NEW.email := CONCAT(Eabbrv, NEW.eid, EmailEnd);
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE TRIGGER assign_email_add BEFORE
 INSERT
 ON
@@ -407,7 +443,7 @@ CREATE OR REPLACE FUNCTION generate_random_sessions_table(n INTEGER)
 RETURNS table(participant_id                                INTEGER,
 man_id                                                      INTEGER,
 booker_id                                                   INTEGER,
-room_name                                                   varchar(50),
+room_name                                                   VARCHAR(50),
 room_no                                                     INTEGER,
 floor_no                                                    INTEGER,
 time_of_booking                                             TIMESTAMP)
@@ -479,7 +515,7 @@ $$ LANGUAGE plpgsql;
 
 
 -- adding normal sessions
-CREATE OR REPLACE PROCEDURE add_sessions(participant_eid INTEGER, approving_manager_eid INTEGER, booker_eid INTEGER, room INTEGER, floor INTEGER, time_in TIMESTAMP, rname varchar(50))
+CREATE OR REPLACE PROCEDURE add_sessions(participant_eid INTEGER, approving_manager_eid INTEGER, booker_eid INTEGER, room INTEGER, floor INTEGER, time_in TIMESTAMP, rname VARCHAR(50))
 AS
 $$
 BEGIN
@@ -532,6 +568,25 @@ FROM
 ON
        CONFLICT(participant_eid, datetime, booker_eid, room, floor) -- primary key
        DO NOTHING                                               -- strictly  for dummy data
+;
+
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION view_future_meeting(sDate DATE, eid INTEGER)
+RETURNS TABLE(floor                                  INTEGER, room INTEGER, dateStart TIMESTAMP)
+AS $$
+DECLARE startTimestamp TIMESTAMP := $1::TIMESTAMP; -- casts date to timestamp
+BEGIN
+RETURN QUERY
+SELECT
+    s.floor, s.room, s.time
+FROM
+    Sessions s
+WHERE
+    s.time               >= startTimestamp
+    AND s.participant_eid = $2
+	ORDER BY s.time ASC
 ;
 
 END;
