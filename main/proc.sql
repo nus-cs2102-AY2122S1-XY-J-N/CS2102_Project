@@ -13,12 +13,40 @@ END IF;
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE TRIGGER assign_fever_trig BEFORE
 INSERT
     OR
 UPDATE
 ON
     health_declaration FOR EACH ROW EXECUTE PROCEDURE assign_fever()
+;
+
+-- triggers that activate when an employee has a fever
+
+--procedure to remove employee from all future meeting room bookings IF FEVER
+CREATE OR REPLACE FUNCTION remove_future_meetings_on_fever()
+RETURNS TRIGGER AS $$
+BEGIN
+	IF NEW.fever = 'true' THEN
+	DELETE 
+		FROM Sessions s
+		WHERE
+			s.participant_eid = NEW.eid
+			AND
+			s.datetime >= NEW.date::TIMESTAMP
+			;
+	END IF;
+	RETURN NULL;
+END;
+$$ LANGUAGE plpgsql; 
+
+CREATE OR REPLACE TRIGGER check_fever AFTER
+INSERT
+	OR
+UPDATE
+ON
+	health_declaration FOR EACH ROW EXECUTE PROCEDURE remove_future_meetings_on_fever()
 ;
 
 /**
@@ -363,19 +391,7 @@ WHERE
 END;
 $$ LANGUAGE plpgsql;
 
---procedure to remove employee from all future meeting room bookings
-CREATE OR REPLACE PROCEDURE remove_meetings_after_sDate(sDate DATE, eid INTEGER)
-AS $$
-BEGIN
-	DELETE 
-		FROM Sessions s
-		WHERE
-			s.participant_eid = $2
-			AND
-			s.datetime >= sDate::TIMESTAMP
-			
-END;
-$$ LANGUAGE plpgsql; 
+
 /**
 * ADMIN ROUTINES
 */
