@@ -362,6 +362,20 @@ WHERE
 
 END;
 $$ LANGUAGE plpgsql;
+
+--procedure to remove employee from all future meeting room bookings
+CREATE OR REPLACE PROCEDURE remove_meetings_after_sDate(sDate DATE, eid INTEGER)
+AS $$
+BEGIN
+	DELETE 
+		FROM Sessions s
+		WHERE
+			s.participant_eid = $2
+			AND
+			s.datetime >= sDate::TIMESTAMP
+			
+END;
+$$ LANGUAGE plpgsql; 
 /**
 * ADMIN ROUTINES
 */
