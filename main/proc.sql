@@ -42,7 +42,6 @@ END IF;
 RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE TRIGGER check_fever AFTER
 INSERT
        OR
