@@ -50,6 +50,28 @@ ON
        health_declaration FOR EACH ROW EXECUTE PROCEDURE remove_future_meetings_on_fever()
 ;
 
+--Trigger to stop 2 managers from updating capacity of room in the same day
+CREATE OR REPLACE FUNCTION updates_check() RETURNS TRIGGER AS $$
+begin
+if exists (
+    select 1
+    from updates
+    where floor = new.floor and room = new.room and date= new.date and approving_eid != new.approving_eid
+)
+then
+    raise notice 'capacity of room already updated today';
+    return null;
+else
+    return new;
+end if;
+
+end;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE TRIGGER updates_check_trigger
+BEFORE INSERT ON updates
+FOR EACH ROW EXECUTE FUNCTION updates_check();
+
 /**
 * BASIC ROUTINES
 */
@@ -105,7 +127,7 @@ INSERT INTO Meeting_Rooms
 ;
 
 -- Assume when room added no entry exists in [Updates]
-CREATE OR REPLACE PROCEDURE change_capacity (manager_eid INTEGER, floor INTEGER , room INTEGER , capacity INTEGER , date DATE) AS $$
+CREATE OR REPLACE PROCEDURE change_capacity (manager_eid INTEGER, floornum INTEGER , roomnum INTEGER , capacity INTEGER , effective_date DATE) AS $$
 BEGIN
 IF EXISTS
 (
@@ -118,27 +140,21 @@ IF EXISTS
 )
 THEN
 INSERT INTO updates VALUES
-       (date
-            , manager_eid
-            , floor
-            , room
-            , capacity
-       )
-ON
-       CONFLICT
-       (floor
-            , room
-       )
-       DO
-UPDATE
-SET    new_cap = capacity
-;
-
+    (effective_date,
+     manager_eid,
+     capacity,
+     floornum,
+     roomnum
+    )
+    ON CONFLICT (date, floor, room, approving_eid) DO UPDATE SET
+    new_cap = capacity;
 ELSE
 RAISE EXCEPTION 'You are not a manager';
 END IF;
 END
 $$ LANGUAGE plpgsql;
+
+
 CREATE OR REPLACE PROCEDURE add_employee
 (
 IN ename     VARCHAR(50)
@@ -160,8 +176,7 @@ INSERT INTO employees
             , kind
             , did
        )
-       $$ LANGUAGE SQL
-;
+$$ LANGUAGE SQL;
 
 CREATE OR REPLACE PROCEDURE remove_employee
 (
@@ -302,7 +317,7 @@ THEN bcheck := false;
 END IF;
 n := n-1;
 END LOOP;
-IF (bcheck IS FALSE) THEN RAISE EXCEPTION 'Some bookings do not exist for the date and time range, or eid does not match';
+IF (bcheck IS FALSE) THEN RAISE EXCEPTION 'Some bookings do not exist for the date and time range';
 END IF;
 LOOP
 EXIT WHEN j=0;
@@ -452,7 +467,7 @@ ORDER BY
 END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION view_booking_report (eid int, start_date date)
-RETURNS TABLE(floor                                 int, room int, booking_datetime timestamp, is_approved boolean) AS $$
+RETURNS TABLE(floornum int, roomnum int, booking_datetime timestamp, is_approved boolean) AS $$
 DECLARE
 BEGIN
 RETURN QUERY
