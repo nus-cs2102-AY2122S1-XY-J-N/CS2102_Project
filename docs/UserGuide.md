@@ -13,13 +13,13 @@ xx
 `CALL remove_department (target_did INTEGER);`
 
 ### Adding an employee
-`CALL add_employee(ename VARCHAR(50), hp_contact INTEGER, kind VARCHAR(7), did INTEGER);`
+`CALL add_employee(ename VARCHAR(50), hp_contact VARCHAR(50), kind VARCHAR(7), did INTEGER);`
 
 This generates a unique eid for the employee which follows an  increasing sequence starting from 1, and also a unique email which concatenates their initials to their eid, followed by the company's email. 
 
 For instance, assume that the phone number and did are valid. 
 
-Then  `CALL add_employee('Abraham Benedict Cumberbatch Donkey', 12345678, 'Senior', 69);` would result in an email `ABCD2@gsnail.com`, if the employee has eid 2.
+Then  `CALL add_employee('Abraham Benedict Cumberbatch Donkey', '12345678', 'Senior', 69);` would result in an email `ABCD2@gsnail.com`, if the employee has eid 2.
 
 ### Removing an employee
 `CALL remove_employee(IN eid INTEGER, resigned_date DATE);`
@@ -38,6 +38,19 @@ This call simply tags a date in the resigned_date attribute of the employee with
 ### Declaring health
 `CALL declare_health (eid INTEGER, date DATE, temperature DECIMAL);`
 
+### Contact Tracing
+Returns list of employees in close contact with some eid. eid represents the employee with a fever.
+Note that this function should be implemented as a trigger with health declaration.
+`CALL SELECT * FROM contact_tracing(eid INTEGER)`
+
+### View future meeting
+`view_future_meeting(sDate DATE, eid INTEGER)`
+
+### Booking a room
+`CALL book_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer)`
+
+### Unbooking a room
+`CALL unbook_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer)`
 ## List of admin procedures
 Generating random sessions data with today's date - 1 month from now as timestamp.
 The input corresponds to how many rows to add
