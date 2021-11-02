@@ -508,7 +508,7 @@ WITH gen_date AS
         SELECT
             hd.eid , hd.date
         FROM
-            lth_Declaration hd
+            Health_Declaration hd
     )
 SELECT
     endo.eid , COUNT(endo.date) nDays
@@ -517,11 +517,12 @@ FROM
 GROUP BY
     endo.eid
 ORDER BY
-    endo.nDays DESC
+    COUNT(endo.date) DESC
 ;
 
 END;
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION view_booking_report (eid int, start_date date)
 RETURNS TABLE(floornum                              int, roomnum int, booking_datetime timestamp, is_approved boolean) AS $$
 DECLARE

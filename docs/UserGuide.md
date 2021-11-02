@@ -30,7 +30,7 @@ This call simply tags a date in the resigned_date attribute of the employee with
 `CALL add_room(room_name VARCHAR(50),floor_num INTEGER, room_num INTEGER,  did INTEGER)`
 
 ### Changing room capacity
-`CALL change_capacity(floor INTEGER, room_num INTEGER, capacity INTEGER, date DATE)`
+`CALL change_capacity (manager_eid INTEGER, floornum INTEGER , roomnum INTEGER , capacity INTEGER , effective_date DATE)`
 
 ### Checking non-compliance
 `SELECT * FROM non_compliance(sDate DATE, eDate DATE)`
