@@ -92,32 +92,18 @@ ON
 /**
 * BASIC ROUTINES
 */
-CREATE OR REPLACE PROCEDURE add_department
-(
-  IN did   INTEGER
-, IN dname varchar(50)
-)
-AS
-$$
-INSERT INTO departments VALUES
-    (did
-      , dname
-    )
-    $$ LANGUAGE SQL
-;
+CREATE OR REPLACE PROCEDURE add_department (IN did INTEGER, IN dname VARCHAR(50))
+AS $$
+	INSERT INTO departments VALUES (did, dname)
+$$ LANGUAGE sql;
 
-CREATE OR REPLACE PROCEDURE remove_department
-(
-IN target_did INTEGER
-)
-AS
-$$
-DELETE
-FROM
-    departments
-WHERE
-    did = target_did $$ LANGUAGE SQL
-;
+
+CREATE OR REPLACE PROCEDURE remove_department (IN target_did INTEGER)
+AS $$
+	DELETE
+	FROM departments
+	WHERE did = target_did
+$$ LANGUAGE sql;
 
 CREATE OR REPLACE PROCEDURE add_room
 (
@@ -222,6 +208,75 @@ $$ LANGUAGE SQL;
 /**
 * CORE ROUTINES
 */
+--is end_hour necessary?
+CREATE OR REPLACE PROCEDURE approve_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)
+AS $$
+BEGIN
+	IF EXISTS
+		(SELECT 1
+		 FROM Manager m, Employees e, Sessions s, Meeting_rooms r
+		 WHERE eid = m.eid --is a manager
+		 --check whether manager's did same as room's did
+		 AND eid = e.eid
+		 AND e.did = r.did
+		 AND s.floor = r.floor
+		 AND s.room = r.room)
+		THEN
+			UPDATE Sessions
+			SET approving_manager_eid = eid
+			WHERE floor = floor_no
+			AND room = room_no;
+			/*AND date from time = date
+			AND hour from time >= start_hour
+			AND hour from time <= end_hour*/
+	END IF;
+END
+$$ LANGUAGE plpgsql;
+
+--is end_hour necessary?
+CREATE OR REPLACE PROCEDURE leave_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)
+AS $$
+BEGIN
+	IF EXISTS
+		(SELECT 1
+		 FROM Sessions
+		 WHERE approving_manager_eid ISNULL --meeting not approved yet
+		 --check whether eid is participating in the specified meeting
+		 AND participant_eid = eid 
+		 AND floor = floor_no
+		 AND room = room_no);
+		 /*AND date from time = date
+		 AND hour from time >= start_hour
+		 AND hour from time <= end_hour*/
+		THEN
+			DELETE FROM Sessions
+			WHERE participant_eid = eid
+			AND floor = floor_no
+			AND room = room_no;
+			/*AND date from time = date
+			AND hour from time >= start_hour
+			AND hour from time <= end_hour*/
+	END IF;
+END
+$$ LANGUAGE plpgsql;
+
+--need to consider contact tracing?
+CREATE OR REPLACE PROCEDURE join_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)
+AS $$
+BEGIN
+	IF EXISTS
+		(SELECT 1
+		 FROM Sessions s, Health_Declaration h
+		 WHERE s.approving_manager_eid ISNULL --meeting not approved yet
+		 --check whether eid has fever
+		 AND h.eid = eid
+		 AND h.fever = false)
+		THEN
+			INSERT INTO Sessions VALUES (eid, NULL, /*booker_eid*/, room_no, floor_no, /*time from date, start_hour, end_hour*/, /*rname*/);
+	END IF;
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE PROCEDURE book_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer) AS $$
 DECLARE
 hasFever        boolean;
@@ -435,48 +490,31 @@ $$ LANGUAGE plpgsql;
 /**
 * ADMIN ROUTINES
 */
-CREATE OR REPLACE FUNCTION view_manager_report (start_date DATE, manager_eid INT)
-RETURNS TABLE (floor_no                                    INT, room_no INT, session_time TIMESTAMP, eid INT) AS $$
+CREATE OR REPLACE FUNCTION view_manager_report (start_date DATE, manager_eid INTEGER)
+RETURNS TABLE (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, eid INTEGER) AS $$
 BEGIN
-IF NOT EXISTS
-(
-    SELECT
-        1
-    FROM
-        Manager m
-    WHERE
-        manager_eid = m.eid
-)
-THEN RETURN QUERY
-(
-    SELECT
-        floor, room, time, participant_eid
-    FROM
-        Sessions
-    WHERE
-        booker_eid ISNULL
-)
-;
-ELSE RETURN QUERY
-(
-    SELECT
-        s.floor, s.room, s.time, s.participant_eid
-    FROM
-        Sessions s, Meeting_rooms m, Employees e
-    WHERE
-        s.approving_manager_eid ISNULL
-        AND s.time      > start_date
-        AND manager_eid = e.eid
-        AND s.floor     = m.floor
-        AND s.room      = m.room
-        AND e.did       = m.did
-    ORDER BY
-        s.time ASC
-)
-;
-END IF;
+	IF NOT EXISTS 
+		(SELECT 1
+		 FROM Manager m
+		 WHERE manager_eid = m.eid)
+		THEN RETURN QUERY
+			(SELECT floor, room, /*date from time*/, /*hour from time*/, participant_eid
+			 FROM Sessions
+			 WHERE booker_eid ISNULL);
+	ELSE RETURN QUERY
+		(SELECT s.floor, s.room, /*date from time*/, /*hour from time*/, s.participant_eid 
+		 FROM Sessions s, Meeting_rooms r, Employees e
+		 WHERE s.approving_manager_eid ISNULL
+		 AND /*date from time*/ >= start_date
+		 AND manager_eid = e.eid --link manager to employees
+		 AND s.floor = r.floor --link sessions to meeting_rooms
+		 AND s.room = r.room --link sessions to meeting_rooms
+		 AND e.did = r.did --manager's did same as room's did
+		 ORDER BY /*date from time*/, /*hour from time*/ ASC);
+	END IF;
 END
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION non_compliance(sDate DATE, eDate DATE)
 RETURNS TABLE (eid                              INTEGER, nDays BIGINT)
 AS $$
