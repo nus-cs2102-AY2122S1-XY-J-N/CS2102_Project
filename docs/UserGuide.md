@@ -60,3 +60,9 @@ Note that it's more efficient calling in small numbers multiple times (e.g. 10 r
 
 ### Get procedures
 `SELECT get_procedure();`
+
+### Functions that will activate with triggers
+
+## Remove_future_meetings_on_fever()
+Deletes all sessions of employee with fever, as well as their close contacts
+

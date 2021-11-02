@@ -22,18 +22,27 @@ ON
 ;
 
 -- triggers that activate when an employee has a fever
---procedure to remove employee from all future meeting room bookings IF FEVER
+--procedure to remove employee and their close contacts from all future meeting room bookings IF FEVER
 CREATE OR REPLACE FUNCTION remove_future_meetings_on_fever()
 RETURNS TRIGGER AS $$
 BEGIN
 IF NEW.fever = 'true' THEN
+-- get close contacts (3 days or less)
+WITH get_close_contacts AS
+    (
+        SELECT eid --returns close contacts
+        FROM
+            contact_tracing(NEW.eid)
+    )
+	
 DELETE
 FROM
     Sessions s
 WHERE
     (
-        s.participant_eid = NEW.eid
-        OR s.booker_eid   = NEW.eid
+        s.participant_eid    = NEW.eid
+        OR s.booker_eid      = NEW.eid
+        OR s.participant_eid  IN(select eid FROM get_close_contacts) -- close contact of fever case
     )
     AND s.datetime >= NEW.date::TIMESTAMP
 ;
@@ -401,7 +410,7 @@ RETURN QUERY
 WITH get_meetings AS
     (
         SELECT
-            s.booker_eid , s.time , s.room , s.floor
+            s.booker_eid , s.datetime , s.room , s.floor
         FROM
             Sessions s
         WHERE
@@ -414,19 +423,13 @@ SELECT DISTINCT
 FROM
     get_meetings gm , Sessions s
 WHERE
-    gm.time               >= curr_date - INTERVAL '3 days'
+    gm.datetime               >= curr_date - INTERVAL '3 days'
     AND s.booker_eid       = gm.booker_eid
     AND s.participant_eid <> $1 -- dont want fever fella
     AND gm.room            = s.room
     AND gm.floor           = s.floor
 ;
 
-END;
-$$ LANGUAGE plpgsql;
---procedure to REMOVE future meetings of close contacts with fever case
-CREATE OR REPLACE PROCEDURE remove_future_meetings_on_fever_close_contact()
-AS $$
-BEGIN
 END;
 $$ LANGUAGE plpgsql;
 /**
@@ -546,6 +549,7 @@ ORDER BY
 
 END;
 $$ LANGUAGE plpgsql;
+--update future meetings of close contacts
 /**
 * UTILITY ROUTINES FOR DATA GENERATION
 */
@@ -732,14 +736,14 @@ DECLARE startTimestamp TIMESTAMP := $1::TIMESTAMP; -- casts date to timestamp
 BEGIN
 RETURN QUERY
 SELECT
-    s.floor , s.room , s.time
+    s.floor , s.room , s.datetime
 FROM
     Sessions s
 WHERE
-    s.time               >= startTimestamp
+    s.datetime               >= startTimestamp
     AND s.participant_eid = $2
 ORDER BY
-    s.time ASC
+    s.datetime ASC
 ;
 
 END;
