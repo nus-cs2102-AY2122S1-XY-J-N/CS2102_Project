@@ -618,7 +618,7 @@ WITH rand_id AS
             eid booker_id
         FROM
             senior
-            RIGHT OUTER JOIN
+            RIGHT OUTER JOIN -- used as eids are distinct
                 manager
         ORDER BY
             random()
