@@ -50,22 +50,22 @@ CALL add_employee ('Aubert Trahmel', '+380 557 174 6238', 'Junior', 6);
 CALL declare_health (1, current_date, 36.6);
 CALL declare_health (2, current_date, 36.5);
 CALL declare_health (3, current_date, 36.6);
-CALL declare_health (4, current_date, 38.0);
+CALL declare_health (4, current_date, 38.0); --fever
 CALL declare_health (5, current_date, 36.5);
 CALL declare_health (6, current_date, 36.9);
 CALL declare_health (7, current_date, 36.4);
 CALL declare_health (8, current_date, 36.2);
 CALL declare_health (9, current_date, 36.9);
 CALL declare_health (10, current_date, 36.9);
-CALL declare_health (11, current_date, 37.9);
+CALL declare_health (11, current_date, 37.9);	--fever
 CALL declare_health (12, current_date, 36.6);
 CALL declare_health (13, current_date, 36.3);
 CALL declare_health (14, current_date, 37.4);
 CALL declare_health (15, current_date, 37.4);
 CALL declare_health (16, current_date, 36.2);
-CALL declare_health (17, current_date, 37.9);
+CALL declare_health (17, current_date, 37.9); --fever
 CALL declare_health (18, current_date, 36.0);
-CALL declare_health (19, current_date, 37.6);
+CALL declare_health (19, current_date, 37.6); --fever
 CALL declare_health (20, current_date, 36.2);
 
 --use in intervals of 5 for efficient generation
