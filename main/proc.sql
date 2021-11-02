@@ -1,3 +1,6 @@
+--Drop functions/procedures
+drop procedure if exists book_room,unbook_room;
+
 /**
 * TRIGGERS
 */
@@ -222,9 +225,16 @@ $$ LANGUAGE SQL;
 /**
 * CORE ROUTINES
 */
-CREATE OR REPLACE PROCEDURE book_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer) AS $$
+CREATE OR REPLACE PROCEDURE book_room(
+       IN floornum integer,
+       IN roomnum integer,
+       IN bdate date,
+       IN start_hr integer,
+       IN end_hr integer,
+       IN beid integer)
+AS $$
 DECLARE
-hasFever        boolean;
+hasFever             boolean;
 bookingTime     time;
 n               integer := end_hr - start_hr;
 j               integer := end_hr - start_hr;
@@ -233,23 +243,24 @@ isBooked        boolean := false;
 BEGIN
 IF NOT EXISTS
 (
-    select
-        1
-    from
-        Manager
-    where
-        eid = booker_eid
-    UNION
-    select
-        1
-    from
-        Senior
-    where
-        eid = booker_eid
+       select
+              1
+       from
+              Manager
+       where
+              eid = beid
+       UNION
+       select
+              1
+       from
+              Senior
+       where
+              eid = beid
 )
 THEN
-RAISE EXCEPTION 'eid % is not a senior or manager', booker_eid;
+RAISE EXCEPTION 'eid % is not a senior or manager', beid;
 END IF;
+
 --If employee is trying to book but didn't declare temperature today, reject his booking
 select
     fever
@@ -258,12 +269,11 @@ into
 from
     Health_Declaration
 where
-    eid      = booker_eid
-    and date = CURRENT_DATE
+       eid      = beid
+       and date = CURRENT_DATE
 ;
-
 IF NOT FOUND THEN
-RAISE EXCEPTION 'eid % no health declaration on %', booker_eid, CURRENT_DATE;
+RAISE EXCEPTION 'eid % no health declaration on %', beid, CURRENT_DATE;
 END IF;
 --Employee declared temp but has fever today
 IF (hasFever IS TRUE) THEN
@@ -271,60 +281,71 @@ RAISE EXCEPTION 'You have fever today, no booking allowed';
 END IF;
 --Check if room is booked
 bookingTime     := make_time(start_hr,0,0);
-bookingDatetime := date + bookingTime;
+bookingDatetime := bdate + bookingTime;
 LOOP
 exit when n = 0;
 IF EXISTS
 (
-    select
-        1
-    from
-        Sessions
-    where
-        floor        = floor
-        and room     = room
-        and datetime = bookingDatetime + make_interval(hours => (n-1))
+       select
+              1
+       from
+              Sessions
+       where
+              floor        = floornum
+              and room     = roomnum
+              and datetime = bookingDatetime + make_interval(hours => (n-1))
 )
 THEN isBooked := true;
 END IF;
 n := n-1;
 END LOOP;
-IF (isBooked IS TRUE) THEN RAISE EXCEPTION 'time slot unavailable';
+IF (isBooked IS TRUE) THEN RAISE EXCEPTION 'Time slot unavailable';
 END IF;
 --All checks passed, book the slots
 LOOP
 exit when j = 0;
 INSERT INTO Sessions
-    (approving_manager_eid
-      , booker_eid
-      , participant_eid
-      , floor
-      , room
-      , datetime
-    )
-    VALUES
-    (null
-      , booker_eid
-      , booker_eid
-      , floor
-      , room
-      , bookingDatetime + make_interval(hours => (j-1))
-    )
+       (approving_manager_eid
+            , booker_eid
+            , participant_eid
+            , floor
+            , room
+            , datetime
+                     , rname
+       )
+       VALUES
+       (null
+            , beid
+            , beid
+            , floornum
+            , roomnum
+            , bookingDatetime + make_interval(hours => (j-1))
+                     , (select rname from meeting_rooms where floor = floornum and room = roomnum)
+       )
 ;
 
 j := j-1;
 END LOOP;
 END;
-$$ LANGUAGE PLPGSQL;
-CREATE OR REPLACE PROCEDURE unbook_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer) AS $$
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE unbook_room(
+       IN floor_in integer,
+       IN room_in integer,
+       IN date_in date,
+       IN start_hr integer,
+       IN end_hr integer,
+       IN beid integer)
+AS $$
 DECLARE
-booking_time     time := make_interval(start_hr,0,0);
+booking_time     time := make_time(start_hr,0,0);
 booking_datetime timestamp;
 bcheck           boolean := true;
 n                int     := end_hr - start_hr;
 j                int     := end_hr - start_hr;
 BEGIN
-booking_datetime := date + booking_time;
+booking_datetime := date_in + booking_time;
 LOOP
 EXIT WHEN n=0;
 IF NOT EXISTS
@@ -334,33 +355,80 @@ IF NOT EXISTS
     from
         Sessions
     where
-        floor          = floor
-        and room       = room
+        floor          = floor_in
+        and room       = room_in
         and datetime   = booking_datetime + make_interval(hours => (n-1))
-        and booker_eid = booker_eid
+        and booker_eid = beid
 )
 THEN bcheck := false;
 END IF;
 n := n-1;
 END LOOP;
-IF (bcheck IS FALSE) THEN RAISE EXCEPTION 'Some bookings do not exist for the date and time range';
+IF (bcheck IS FALSE) THEN RAISE EXCEPTION 'Not all bookings for the time range under your name is found';
 END IF;
 LOOP
 EXIT WHEN j=0;
+
 DELETE
 FROM
     Sessions
 WHERE
-    floor          = floor
-    and room       = room
+    floor          = floor_in
+    and room       = room_in
     and datetime   = booking_datetime + make_interval(hours => (j-1))
-    and booker_eid = booker_eid
+    and booker_eid = beid
 ;
 
 j := j-1;
 END LOOP;
 END;
 $$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION search_room (min_cap int, meeting_date date, start_hr int, end_hr int) RETURNS TABLE (floornum int, roomnum int, did_t int, roomcap int) AS $$
+declare
+start_datetime timestamp := meeting_date + make_time(start_hr,0,0);
+end_datetime timestamp := meeting_date + make_time(end_hr,0,0);
+begin
+RETURN QUERY
+WITH rooms_CTE AS (
+       select *
+       from updates join meeting_rooms USING (floor, room)
+       where new_cap >= min_cap
+       --rooms that are already booked for the input date and duration
+), conflicting_sessions_CTE AS (
+       select floor, room
+       from sessions
+       where participant_eid = booker_eid
+              and datetime >= start_datetime and datetime < end_datetime
+       --rooms that meet min capacity, which takes capacity from the entry with latest date in updates
+), cleaned_rooms_CTE AS(
+       select r1.floor, r1.room, r1.new_cap, r1.did
+       from rooms_CTE r1
+       join (
+              select floor,room, max(date) as maxdate
+              from rooms_CTE
+              group by (floor,room)
+       ) r2 on r1.floor=r2.floor and r1.room=r2.room and r1.date=r2.maxdate
+       order by (r1.floor, r1.room)
+)
+
+select *
+from(
+       select floor, room, did, new_cap
+       from cleaned_rooms_CTE
+
+       except
+
+       select cr.floor, cr.room, cr.did, cr.new_cap
+       from cleaned_rooms_CTE cr
+       join conflicting_sessions_CTE s on cr.floor=s.floor and cr.room=s.room
+       )ans
+order by (ans.new_cap) asc
+;
+end;
+$$ LANGUAGE PLPGSQL;
+
 /**
 * HEALTH ROUTINES
 */
