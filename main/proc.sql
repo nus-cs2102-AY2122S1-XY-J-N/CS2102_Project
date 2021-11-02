@@ -423,6 +423,12 @@ WHERE
 
 END;
 $$ LANGUAGE plpgsql;
+--procedure to REMOVE future meetings of close contacts with fever case
+CREATE OR REPLACE PROCEDURE remove_future_meetings_on_fever_close_contact()
+AS $$
+BEGIN
+END;
+$$ LANGUAGE plpgsql;
 /**
 * ADMIN ROUTINES
 */
@@ -614,30 +620,28 @@ WITH rand_id AS
     )
   , rand_book_id AS
     (
-        select
-            eid booker_id
+        SELECT
+            js.eid booker_id
         FROM
-            senior
-            RIGHT OUTER JOIN -- used as eids are distinct
-                manager
+           (SELECT eid FROM Junior UNION SELECT eid FROM Senior) js
         ORDER BY
             random()
         LIMIT n
     )
   , rand_room AS
     (
-        select
+        SELECT
             rname , floor , room
-        from
+        FROM
             meeting_rooms
-        offset random() *
+        OFFSET random() *
             (
-                select
+                SELECT
                     count(*)
-                from
+                FROM
                     meeting_rooms
             )
-        limit n
+        LIMIT n
     )
   , get_timestamp AS
     (
