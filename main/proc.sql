@@ -481,6 +481,8 @@ CREATE OR REPLACE FUNCTION non_compliance(sDate DATE, eDate DATE)
 RETURNS TABLE (eid                              INTEGER, nDays BIGINT)
 AS $$
 BEGIN
+IF sDate > eDate THEN RAISE EXCEPTION 'The start date % is after the end date %', sDate, eDate;
+END IF;
 RETURN QUERY
 -- generate all possible dates
 WITH gen_date AS
@@ -511,7 +513,7 @@ WITH gen_date AS
         SELECT
             hd.eid , hd.date
         FROM
-            lth_Declaration hd
+            Health_Declaration hd
     )
 SELECT
     endo.eid , COUNT(endo.date) nDays
@@ -520,7 +522,7 @@ FROM
 GROUP BY
     endo.eid
 ORDER BY
-    endo.nDays DESC
+    COUNT(endo.date) DESC
 ;
 
 END;
@@ -742,6 +744,25 @@ WHERE
     AND s.participant_eid = $2
 ORDER BY
     s.datetime ASC
+;
+
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION get_procedure()
+RETURNS TABLE(procedure name) AS $$
+BEGIN
+RETURN QUERY
+SELECT
+    p.proname as procedure
+FROM
+    pg_proc p
+    join
+        pg_namespace n
+        on
+            p.pronamespace = n.oid
+WHERE
+    n.nspname not in ('pg_catalog', 'information_schema')
+    and p.prokind = 'p'
 ;
 
 END;

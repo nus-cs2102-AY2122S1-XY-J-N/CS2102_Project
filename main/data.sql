@@ -7,8 +7,8 @@ CALL add_department (3, 'Product Management');
 CALL add_department (4, 'Marketing');
 CALL add_department (5, 'Business Development');
 CALL add_department (6, 'Services');
-CALL add_department (7, 'Sales');
-CALL add_department (8, 'Product Management');
+CALL add_department (7, 'Finance');
+CALL add_department (8, 'Events Management');
 
 CALL add_room ('Buffalo', 1, 1, 5);
 CALL add_room ('Eagle', 1, 2, 5);

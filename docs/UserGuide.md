@@ -30,7 +30,7 @@ This call simply tags a date in the resigned_date attribute of the employee with
 `CALL add_room(room_name VARCHAR(50),floor_num INTEGER, room_num INTEGER,  did INTEGER)`
 
 ### Changing room capacity
-`CALL change_capacity(floor INTEGER, room_num INTEGER, capacity INTEGER, date DATE)`
+`CALL change_capacity (manager_eid INTEGER, floornum INTEGER , roomnum INTEGER , capacity INTEGER , effective_date DATE)`
 
 ### Checking non-compliance
 `SELECT * FROM non_compliance(sDate DATE, eDate DATE)`
@@ -44,13 +44,11 @@ Note that this function should be implemented as a trigger with health declarati
 `CALL SELECT * FROM contact_tracing(eid INTEGER)`
 
 ### View future meeting
-`view_future_meeting(sDate DATE, eid INTEGER)`
+`SELECT * FROM view_future_meeting(sDate DATE, eid INTEGER)`
 
 ### Booking a room
 `CALL book_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer)`
 
-### Removing all meetings participant is supposed to join
-`CALL remove_meetings_after_sDate(sDate DATE, eid INTEGER)`
 
 ### Unbooking a room
 `CALL unbook_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer)`
@@ -60,7 +58,11 @@ The input corresponds to how many rows to add
 Note that it's more efficient calling in small numbers multiple times (e.g. 10 rows to add = 5 + 5)
 `CALL add_random_sessions(how_many_to_insert INTEGER)`
 
+### Get procedures
+`SELECT get_procedure();`
+
 ### Functions that will activate with triggers
 
 ## Remove_future_meetings_on_fever()
 Deletes all sessions of employee with fever, as well as their close contacts
+
