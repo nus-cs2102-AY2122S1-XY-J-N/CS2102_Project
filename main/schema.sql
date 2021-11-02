@@ -69,11 +69,10 @@ CREATE TABLE Updates
        (
               date DATE
             , approving_eid INTEGER
-            , --trigger needed to check if eid is a manager
-              new_cap INTEGER CHECK (new_cap > 0)
+            , new_cap INTEGER CHECK (new_cap > 0)
             , floor    INTEGER
             , room   INTEGER
-            , PRIMARY KEY (date, approving_eid, floor, room)
+            , PRIMARY KEY (approving_eid, date, floor, room)
             , FOREIGN KEY (floor, room) REFERENCES Meeting_Rooms (floor, room)
        )
 ;
