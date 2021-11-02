@@ -60,4 +60,7 @@ The input corresponds to how many rows to add
 Note that it's more efficient calling in small numbers multiple times (e.g. 10 rows to add = 5 + 5)
 `CALL add_random_sessions(how_many_to_insert INTEGER)`
 
+### Functions that will activate with triggers
 
+## Remove_future_meetings_on_fever()
+Deletes all sessions of employee with fever, as well as their close contacts
