@@ -44,13 +44,11 @@ Note that this function should be implemented as a trigger with health declarati
 `CALL SELECT * FROM contact_tracing(eid INTEGER)`
 
 ### View future meeting
-`view_future_meeting(sDate DATE, eid INTEGER)`
+`SELECT * FROM view_future_meeting(sDate DATE, eid INTEGER)`
 
 ### Booking a room
 `CALL book_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer)`
 
-### Removing all meetings participant is supposed to join
-`CALL remove_meetings_after_sDate(sDate DATE, eid INTEGER)`
 
 ### Unbooking a room
 `CALL unbook_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer)`
@@ -60,4 +58,5 @@ The input corresponds to how many rows to add
 Note that it's more efficient calling in small numbers multiple times (e.g. 10 rows to add = 5 + 5)
 `CALL add_random_sessions(how_many_to_insert INTEGER)`
 
-
+### Get procedures
+`SELECT get_procedure();`

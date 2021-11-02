@@ -478,6 +478,8 @@ CREATE OR REPLACE FUNCTION non_compliance(sDate DATE, eDate DATE)
 RETURNS TABLE (eid                              INTEGER, nDays BIGINT)
 AS $$
 BEGIN
+IF sDate > eDate THEN RAISE EXCEPTION 'The start date % is after the end date %', sDate, eDate;
+END IF;
 RETURN QUERY
 -- generate all possible dates
 WITH gen_date AS
@@ -522,7 +524,6 @@ ORDER BY
 
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION view_booking_report (eid int, start_date date)
 RETURNS TABLE(floornum                              int, roomnum int, booking_datetime timestamp, is_approved boolean) AS $$
 DECLARE
@@ -624,7 +625,18 @@ WITH rand_id AS
         SELECT
             js.eid booker_id
         FROM
-           (SELECT eid FROM Junior UNION SELECT eid FROM Senior) js
+            (
+                SELECT
+                    eid
+                FROM
+                    Junior
+                UNION
+                SELECT
+                    eid
+                FROM
+                    Senior
+            )
+            js
         ORDER BY
             random()
         LIMIT n
@@ -728,6 +740,25 @@ WHERE
     AND s.participant_eid = $2
 ORDER BY
     s.time ASC
+;
+
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION get_procedure()
+RETURNS TABLE(procedure name) AS $$
+BEGIN
+RETURN QUERY
+SELECT
+    p.proname as procedure
+FROM
+    pg_proc p
+    join
+        pg_namespace n
+        on
+            p.pronamespace = n.oid
+WHERE
+    n.nspname not in ('pg_catalog', 'information_schema')
+    and p.prokind = 'p'
 ;
 
 END;
