@@ -148,3 +148,15 @@ DELETE
 ON
        Employees FOR EACH STATEMENT EXECUTE FUNCTION stop_delete_employee()
 ;
+
+CREATE OR REPLACE VIEW session_pax
+ AS
+ SELECT count(sessions.participant_eid) AS pax,
+    sessions.approving_manager_eid,
+    sessions.booker_eid,
+    sessions.floor
+,    sessions.room,
+    sessions.datetime,
+    sessions.rname
+   FROM sessions
+  GROUP BY sessions.approving_manager_eid, sessions.booker_eid, sessions.floor, sessions.room, sessions.datetime, sessions.rname;
