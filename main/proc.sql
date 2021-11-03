@@ -277,7 +277,7 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE PROCEDURE join_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)
+CREATE OR REPLACE PROCEDURE join_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, jeid INTEGER)
 AS $$
 DECLARE
 	start_datetime TIMESTAMP := (CAST(date AS TEXT) || ' ' || start_hour || ':00:00')::TIMESTAMP;
@@ -294,7 +294,7 @@ BEGIN
 		 AND datetime >= start_datetime
 		 AND datetime  < end_datetime
 		 --check whether eid has fever/resigned
-		 AND h.eid = eid
+		 AND h.eid = jeid
 		 AND h.fever = false
 		 AND e.resigned_date ISNULL)
 		THEN
