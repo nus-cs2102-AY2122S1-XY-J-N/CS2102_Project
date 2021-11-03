@@ -144,11 +144,11 @@ INSERT INTO Meeting_Rooms
 
 -- Assume when room added no entry exists in [Updates]
 CREATE OR REPLACE PROCEDURE public.change_capacity(
-IN manager_eid    integer,
-IN floornum       integer,
-IN roomnum        integer,
-IN capacity       integer,
-IN effective_date date)
+	IN manager_eid integer,
+	IN floornum integer,
+	IN roomnum integer,
+	IN capacity integer,
+	IN effective_date date)
 LANGUAGE 'plpgsql'
 AS $BODY$
 BEGIN
@@ -163,49 +163,29 @@ IF EXISTS
 )
 THEN
 INSERT INTO updates VALUES
-    (effective_date
-      , manager_eid
-      , capacity
-      , floornum
-      , roomnum
+    (effective_date,
+     manager_eid,
+     capacity,
+     floornum,
+     roomnum
     )
-ON
-    CONFLICT
-    (date
-      , floor
-      , room
-      , approving_eid
-    )
-    DO
-UPDATE
-SET new_cap = capacity
-;
-
+	ON CONFLICT (date, floor, room, approving_eid) DO UPDATE SET
+	new_cap = capacity;
 ELSE
 RAISE EXCEPTION 'You are not a manager';
 END IF;
-DELETE
-FROM
-    sessions
-WHERE
-    floor    = floornum
-    AND room = roomnum
-    AND datetime IN
-    (
-        SELECT
-            datetime
-        FROM
-            session_pax
-        WHERE
-            floor        =floornum
-            AND room     =roomnum
-            AND datetime > effective_date::timestamp
-            AND pax      > capacity
-    )
+
+DELETE FROM sessions
+WHERE floor = floornum AND room = roomnum
+	AND datetime IN (
+		SELECT datetime
+		FROM session_pax
+		WHERE floor=floornum AND room=roomnum AND datetime > effective_date::timestamp AND pax > 				capacity)
 ;
 
 END
 $BODY$;
+
 CREATE OR REPLACE PROCEDURE add_employee
 (
 IN ename     VARCHAR(50)

@@ -26,21 +26,6 @@ CALL add_room ('Fisher', 5, 1, 2);
 CALL add_room ('Jackrabbit', 5, 2, 5);
 CALL add_room ('Raven', 5, 3, 8);
 
-call change_capacity(1,1,2,6,'2021-9-1');
-call change_capacity(1,1,3,6,'2021-9-1');
-call change_capacity(1,2,1,8,'2021-9-1');
-call change_capacity(1,2,2,8,'2021-9-1');
-call change_capacity(1,2,3,8,'2021-9-1');
-call change_capacity(1,3,1,10,'2021-9-1');
-call change_capacity(1,3,2,10,'2021-9-1');
-call change_capacity(1,3,3,10,'2021-9-1');
-call change_capacity(1,4,1,5,'2021-9-1');
-call change_capacity(1,4,2,5,'2021-9-1');
-call change_capacity(1,4,3,5,'2021-9-1');
-call change_capacity(1,5,1,12,'2021-9-1');
-call change_capacity(1,5,2,12,'2021-9-1');
-call change_capacity(1,5,3,12,'2021-9-1');
-
 CALL add_employee ('Anna-diane Dentith', '+7 823 623 8994', 'Manager', 2);
 CALL add_employee ('Somerset Ruckledge', '+52 707 905 4955', 'Manager', 2);
 CALL add_employee ('Julissa Eades', '+386 514 939 1518', 'Manager', 8);
