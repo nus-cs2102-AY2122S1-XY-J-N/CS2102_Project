@@ -292,7 +292,7 @@ BEGIN
 		 --check whether meeting is joinable
 		 WHERE s.approving_manager_eid ISNULL
 		 AND datetime >= start_datetime
-		 AND datetime  < end_datetime
+		 AND datetime < end_datetime
 		 --check whether eid has fever/resigned
 		 AND h.eid = jeid
 		 AND h.fever = false
@@ -306,14 +306,14 @@ BEGIN
 							   WHERE floor = floor_no
 							   AND room = room_no
 							   AND datetime >= start_datetime
-							   AND datetime  < end_datetime
+							   AND datetime < end_datetime
 							   LIMIT 1);
 		    rname_var := (SELECT rname
 						  FROM Sessions
 						  WHERE floor = floor_no
 						  AND room = room_no
 						  AND datetime >= start_datetime
-						  AND datetime  < end_datetime
+						  AND datetime < end_datetime
 						  LIMIT 1);
 			INSERT INTO Sessions VALUES (eid, NULL, booker_eid_var, floor_no, room_no, increment_datetime, rname_var);
 			increment_datetime := increment_datetime + INTERVAL '1 HOUR';
