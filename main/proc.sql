@@ -100,23 +100,19 @@ ON
 /**
 * BASIC ROUTINES
 */
+
 CREATE OR REPLACE PROCEDURE add_department (IN did INTEGER, IN dname VARCHAR(50))
 AS $$
-INSERT INTO departments VALUES
-    (did
-      , dname
-    )
-    $$ LANGUAGE sql
-;
+	INSERT INTO departments VALUES (did, dname)
+$$ LANGUAGE sql;
 
 CREATE OR REPLACE PROCEDURE remove_department (IN target_did INTEGER)
 AS $$
-DELETE
-FROM
-    departments
-WHERE
-    did = target_did $$ LANGUAGE sql
-;
+	DELETE
+	FROM departments
+	WHERE did = target_did
+$$ LANGUAGE sql;
+
 
 CREATE OR REPLACE PROCEDURE add_room
 (
@@ -225,161 +221,115 @@ WHERE
 ;
 
 $$ LANGUAGE SQL;
+
 /**
 * CORE ROUTINES
 */
+
 CREATE OR REPLACE PROCEDURE approve_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)
 AS $$
---get timestamp from date and time
 DECLARE
-start_date_time TIMESTAMP := (CAST($3 AS TEXT) || ' ' || $4 || ':00:00')::TIMESTAMP;
-end_date_time   TIMESTAMP := (CAST($3 AS TEXT) || ' ' || $5 || ':00:00')::TIMESTAMP;
+	start_datetime TIMESTAMP := (CAST(date AS TEXT) || ' ' || start_hour || ':00:00')::TIMESTAMP;
+	end_datetime TIMESTAMP := (CAST(date AS TEXT) || ' ' || end_hour || ':00:00')::TIMESTAMP;
 BEGIN
--- if meeting exists  in sessions
-IF EXISTS
-(
-    SELECT
-        1
-    FROM
-        Manager m , Sessions s , Employees e , Meeting_rooms r
-    WHERE
-        $6     = m.eid --is a manager
-        AND $6 = e.eid
-        --check whether manager's did same as room's did
-        AND e.did   = r.did
-        AND s.floor = r.floor
-        AND s.room  = r.room
-        --check in bounds
-        AND start_date_time >= s.datetime
-        AND end_date_time    < s.datetime -- ends with XX:59:00
-)
-THEN
-UPDATE
-    Sessions
-SET approving_manager_eid = eid
-WHERE
-    floor         = floor_no
-    AND room      = room_no
-    AND datetime >= start_date_time
-    AND datetime  < end_date_time -- ends with XX:59:00
-;
-
-END IF;
-END;
+	IF EXISTS
+		(SELECT 1
+		 FROM Manager m, Employees e, Sessions s, Meeting_rooms r
+		 WHERE m.eid = eid --is a manager
+		 --check whether manager's did same as room's did
+		 AND e.eid = eid
+		 AND e.did = r.did
+		 AND s.floor = r.floor
+		 AND s.room = r.room
+		 AND s.datetime >= start_datetime
+		 AND s.datetime < end_datetime)
+		THEN
+			UPDATE Sessions
+			SET approving_manager_eid = eid
+			WHERE floor = floor_no
+			AND room = room_no
+			AND datetime >= start_datetime
+			AND datetime < end_datetime
+	ELSE
+		RAISE EXCEPTION 'Invalid manager entered!';
+	END IF;
+END
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE PROCEDURE leave_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)
 AS $$
 DECLARE
-start_date_time TIMESTAMP := (CAST($3 AS TEXT) || ' ' || $4 || ':00:00')::TIMESTAMP;
-end_date_time   TIMESTAMP := (CAST($3 AS TEXT) || ' ' || $5 || ':00:00')::TIMESTAMP;
+	start_datetime TIMESTAMP := (CAST(date AS TEXT) || ' ' || start_hour || ':00:00')::TIMESTAMP;
+	end_datetime TIMESTAMP := (CAST(date AS TEXT) || ' ' || end_hour || ':00:00')::TIMESTAMP;
 BEGIN
-IF EXISTS
-(
-    SELECT
-        1
-    FROM
-        Sessions
-    WHERE
-        approving_manager_eid ISNULL --meeting not approved yet
-        --check whether eid is participating in the specified meeting
-        AND participant_eid = $6
-        AND floor           = floor_no
-        AND room            = room_no
-        AND datetime       >= start_date_time
-        AND datetime        < end_date_time
-)
-THEN
-DELETE
-FROM
-    Sessions
-WHERE
-    participant_eid = eid
-    AND floor       = floor_no
-    AND room        = room_no
-    AND datetime   >= start_date_time
-    AND datetime    < end_date_time
-;
-
-END IF;
-END;
-$$ LANGUAGE plpgsql;
-CREATE OR REPLACE PROCEDURE join_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)
-AS $$
-DECLARE booker_eid_var INTEGER     := 0;
-rname_var              VARCHAR(50) := '';
-start_date_time        TIMESTAMP   := (CAST($3 AS TEXT) || ' ' || $4 || ':00:00')::TIMESTAMP;
-end_date_time          TIMESTAMP   := (CAST($3 AS TEXT) || ' ' || $5 || ':00:00')::TIMESTAMP;
-increment_time         TIMESTAMP   := start_date_time;
-BEGIN
-IF EXISTS
-(
-    SELECT
-        1
-    FROM
-        Sessions s , Health_Declaration h
-    WHERE
-        s.approving_manager_eid ISNULL --meeting not approved yet
-        --check whether eid has fever
-        AND h.eid     = $6
-        AND h.fever   = false
-        AND datetime >= start_date_time
-        AND datetime  < end_date_time
-)
-THEN
-booker_eid_var :=
-(
-    SELECT
-        s.booker_eid
-    FROM
-        Sessions s
-    WHERE
-        s.floor       = $1
-        AND s.room    = $2
-        AND datetime >= start_date_time
-        AND datetime  < end_date_time
-    LIMIT 1
-)
-;
-rname_var :=
-(
-    SELECT
-        rname
-    FROM
-        Sessions s
-    WHERE
-        s.floor       = $1
-        AND s.room    = $2
-        AND datetime >= start_date_time
-        AND datetime  < end_date_time
-    LIMIT 1
-)
-;
-LOOP
-exit when increment_time = end_date_time;
-INSERT INTO Sessions VALUES
-    ($6
-      , NULL
-      , booker_eid_var
-      , $1             -- floor
-      , $2             -- room
-      , increment_time --datetime
-      , rname_var
-    )
-ON
-    CONFLICT
-    (participant_eid
-      , datetime
-      , booker_eid
-      , floor
-      , room
-    )
-    DO NOTHING
-; -- assumed that booker = participant_eid so expect dupes
-increment_time := increment_time + INTERVAL '1 HOUR';
-END LOOP;
-END IF;
+	IF EXISTS
+		(SELECT 1
+		 FROM Sessions
+		 WHERE approving_manager_eid ISNULL --meeting not approved yet
+		 --check whether eid is participating in the specified meeting
+		 AND participant_eid = eid 
+		 AND floor = floor_no
+		 AND room = room_no
+		 AND datetime >= start_datetime
+		 AND datetime < end_datetime)
+		THEN
+			DELETE FROM Sessions
+			WHERE participant_eid = eid
+			AND floor = floor_no
+			AND room = room_no
+			AND datetime >= start_datetime
+			AND datetime < end_datetime;
+	END IF;
 END
 $$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE PROCEDURE join_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)
+AS $$
+DECLARE
+	start_datetime TIMESTAMP := (CAST(date AS TEXT) || ' ' || start_hour || ':00:00')::TIMESTAMP;
+	end_datetime TIMESTAMP := (CAST(date AS TEXT) || ' ' || end_hour || ':00:00')::TIMESTAMP;
+	booker_eid_var INTEGER := 0;
+	rname_var VARCHAR(50) := '';
+	increment_datetime TIMESTAMP := start_datetime;
+BEGIN
+	IF EXISTS
+		(SELECT 1
+		 FROM Sessions s, Health_Declaration h, Employees e
+		 --check whether meeting is joinable
+		 WHERE s.approving_manager_eid ISNULL
+		 AND datetime >= start_date_time
+		 AND datetime  < end_date_time
+		 --check whether eid has fever/resigned
+		 AND h.eid = eid
+		 AND h.fever = false
+		 AND e.resigned_date ISNULL)
+		THEN
+		--loop for joining multiple meetings
+		LOOP
+		EXIT WHEN increment_datetime = end_datetime;
+			booker_eid_var := (SELECT booker_eid 
+							   FROM Sessions
+							   WHERE floor = floor_no
+							   AND room = room_no
+							   AND datetime >= start_date_time
+							   AND datetime  < end_date_time
+							   LIMIT 1);
+		    rname_var := (SELECT rname
+						  FROM Sessions
+						  WHERE floor = floor_no
+						  AND room = room_no
+						  AND datetime >= start_date_time
+						  AND datetime  < end_date_time
+						  LIMIT 1);
+			INSERT INTO Sessions VALUES (eid, NULL, booker_eid_var, floor_no, room_no, increment_datetime, rname_var);
+			increment_datetime := increment_datetime + INTERVAL '1 HOUR';
+		END LOOP;
+	ELSE
+		RAISE EXCEPTION 'Meeting approved already/Invalid employee entered!';
+	END IF;
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE PROCEDURE book_room(
 IN floornum integer,
 IN roomnum  integer,
@@ -692,55 +642,36 @@ WHERE
 
 END;
 $$ LANGUAGE plpgsql;
+
 /**
 * ADMIN ROUTINES
 */
+
 CREATE OR REPLACE FUNCTION view_manager_report (start_date DATE, manager_eid INTEGER)
-RETURNS TABLE (floor_no                                    INTEGER, room_no INTEGER, datetime TIMESTAMP, eid INTEGER)
-AS $$
-DECLARE start_date_time TIMESTAMP := start_date::TIMESTAMP;
+RETURNS TABLE (floor_no INTEGER, room_no INTEGER, date DATE, start_hour TIMESTAMP, eid INTEGER) AS $$
 BEGIN
-IF NOT EXISTS
-(
-    SELECT
-        1
-    FROM
-        Manager m
-    WHERE
-        manager_eid = m.eid
-)
-THEN RETURN QUERY
-(
-    SELECT
-        floor , room , datetime , participant_eid
-    FROM
-        Sessions
-    WHERE
-        booker_eid ISNULL -- empty table
-)
-;
-ELSE RETURN QUERY
-(
-    SELECT
-        s.floor , s.room , s.datetime , s.participant_eid
-    FROM
-        Sessions s , Meeting_rooms r , Employees e
-    WHERE
-        s.approving_manager_eid ISNULL
-        AND
-        /*date from time*/
-        s.datetime     >= start_date_time
-        AND manager_eid = e.eid   --link manager to employees
-        AND s.floor     = r.floor --link sessions to meeting_rooms
-        AND s.room      = r.room  --link sessions to meeting_rooms
-        AND e.did       = r.did   --manager's did same as room's did
-    ORDER BY
-        s.datetime ASC
-)
-;
-END IF;
+	IF NOT EXISTS 
+		(SELECT 1
+		 FROM Manager m
+		 WHERE m.eid = manager_eid)
+		THEN RETURN QUERY
+			(SELECT floor, room, datetime::DATE, datetime::TIMESTAMP, participant_eid
+			 FROM Sessions
+			 WHERE booker_eid ISNULL);
+	ELSE RETURN QUERY
+		(SELECT floor, room, datetime::DATE, datetime::TIMESTAMP, participant_eid
+		 FROM Sessions s, Meeting_rooms r, Employees e
+		 WHERE s.approving_manager_eid ISNULL
+		 AND datetime::DATE >= start_date
+		 AND e.eid = manager_eid --link manager to employees
+		 AND s.floor = r.floor --link sessions to meeting_rooms
+		 AND s.room = r.room --link sessions to meeting_rooms
+		 AND e.did = r.did --manager's did same as room's did
+		 ORDER BY datetime::DATE, datetime::TIMESTAMP ASC);
+	END IF;
 END
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION non_compliance(sDate DATE, eDate DATE)
 RETURNS TABLE (eid                              INTEGER, nDays BIGINT)
 AS $$

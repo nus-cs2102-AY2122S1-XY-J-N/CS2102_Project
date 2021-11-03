@@ -49,9 +49,21 @@ Note that this function should be implemented as a trigger with health declarati
 ### Booking a room
 `CALL book_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer)`
 
-
 ### Unbooking a room
 `CALL unbook_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer)`
+
+### View manager report
+`SELECT * FROM view_manager_report (start_date DATE, manager_eid INTEGER)`
+
+### Approve meeting
+`CALL approve_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)`
+
+### Join meeting
+`CALL join_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)`
+
+### Leave meeting
+`CALL leave_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)`
+
 ## List of admin procedures
 Generating random sessions data with today's date - 1 month from now as timestamp.
 The input corresponds to how many rows to add
