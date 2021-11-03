@@ -1,8 +1,10 @@
 --Drop functions/procedures
 drop procedure if exists book_room,unbook_room;
+
 /**
 * TRIGGERS
 */
+
 --trigger to assign fever
 CREATE OR REPLACE FUNCTION assign_fever()
 RETURNS TRIGGER AS $$
@@ -15,13 +17,13 @@ END IF;
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE TRIGGER assign_fever_trig BEFORE
 INSERT
     OR
 UPDATE
 ON
-    health_declaration FOR EACH ROW EXECUTE PROCEDURE assign_fever()
-;
+    health_declaration FOR EACH ROW EXECUTE PROCEDURE assign_fever();
 
 -- triggers that activate when an employee has a fever
 --procedure to remove employee and their close contacts from all future meeting room bookings IF FEVER
@@ -52,13 +54,12 @@ WHERE
                 get_close_contacts
         ) -- close contact of fever case
     )
-    AND s.datetime >= NEW.date::TIMESTAMP
-;
-
+    AND s.datetime >= NEW.date::TIMESTAMP;
 END IF;
 RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE TRIGGER check_fever AFTER
 INSERT
     OR
@@ -94,8 +95,7 @@ CREATE OR REPLACE TRIGGER updates_check_trigger
 BEFORE
 INSERT
 ON
-    updates FOR EACH ROW EXECUTE FUNCTION updates_check()
-;
+    updates FOR EACH ROW EXECUTE FUNCTION updates_check();
 
 /**
 * BASIC ROUTINES
@@ -112,7 +112,6 @@ AS $$
 	FROM departments
 	WHERE did = target_did
 $$ LANGUAGE sql;
-
 
 CREATE OR REPLACE PROCEDURE add_room
 (
@@ -135,8 +134,7 @@ INSERT INTO Meeting_Rooms
       , room_num
       , did
     )
-    $$ LANGUAGE SQL
-;
+    $$ LANGUAGE SQL;
 
 -- Assume when room added no entry exists in [Updates]
 CREATE OR REPLACE PROCEDURE public.change_capacity(
@@ -170,7 +168,6 @@ INSERT INTO updates VALUES
 ELSE
 RAISE EXCEPTION 'You are not a manager';
 END IF;
-
 DELETE FROM sessions
 WHERE floor = floornum AND room = roomnum
 	AND datetime IN (
@@ -203,8 +200,7 @@ INSERT INTO employees
       , kind
       , did
     )
-    $$ LANGUAGE SQL
-;
+    $$ LANGUAGE SQL;
 
 CREATE OR REPLACE PROCEDURE remove_employee
 (
@@ -217,9 +213,7 @@ UPDATE
     employees
 SET resigned_date = $2
 WHERE
-    eid = $1
-;
-
+    eid = $1;
 $$ LANGUAGE SQL;
 
 /**
@@ -376,7 +370,6 @@ where
     eid      = beid
     and date = CURRENT_DATE
 ;
-
 IF NOT FOUND THEN
 RAISE EXCEPTION 'eid % no health declaration on %', beid, CURRENT_DATE;
 END IF;
@@ -434,13 +427,12 @@ INSERT INTO Sessions
                 floor    = floornum
                 and room = roomnum
         )
-    )
-;
-
+    );
 j := j-1;
 END LOOP;
 END;
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE PROCEDURE unbook_room(
 IN floor_in integer,
 IN room_in  integer,
@@ -486,13 +478,12 @@ WHERE
     floor          = floor_in
     and room       = room_in
     and datetime   = booking_datetime + make_interval(hours => (j-1))
-    and booker_eid = beid
-;
-
+    and booker_eid = beid;
 j := j-1;
 END LOOP;
 END;
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION search_room (min_cap int, meeting_date date, start_hr int, end_hr int) RETURNS TABLE (floornum int, roomnum int, did_t int, roomcap int) AS $$
 declare
 start_datetime timestamp := meeting_date + make_time(start_hr,0,0);
@@ -566,14 +557,14 @@ from
     )
     ans
 order by
-    (ans.new_cap) asc
-;
-
+    (ans.new_cap) asc;
 end;
 $$ LANGUAGE PLPGSQL;
+
 /**
 * HEALTH ROUTINES
 */
+
 CREATE OR REPLACE PROCEDURE declare_health
 (
 IN eid_in INTEGER
@@ -603,11 +594,10 @@ UPDATE
 SET temp = $3
 WHERE
     Health_Declaration.eid      = $1
-    AND Health_Declaration.date = $2
-;
-
+    AND Health_Declaration.date = $2;
 END;
 $$ LANGUAGE plpgsql;
+
 -- contact tracing
 CREATE OR REPLACE FUNCTION contact_tracing(f_eid INTEGER)
 RETURNS TABLE (eid                               INTEGER)
@@ -637,9 +627,7 @@ WHERE
     AND s.booker_eid       = gm.booker_eid
     AND s.participant_eid <> $1 -- dont want fever fella
     AND gm.room            = s.room
-    AND gm.floor           = s.floor
-;
-
+    AND gm.floor           = s.floor;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -717,11 +705,10 @@ FROM
 GROUP BY
     endo.eid
 ORDER BY
-    COUNT(endo.date) DESC
-;
-
+    COUNT(endo.date) DESC;
 END;
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION view_booking_report (eid int, start_date date)
 RETURNS TABLE(floornum                              int, roomnum int, booking_datetime timestamp, is_approved boolean) AS $$
 DECLARE
@@ -739,15 +726,16 @@ WHERE
     booker_eid    = eid
     AND datetime >= start_date::timestamp
 ORDER BY
-    datetime ASC
-;
-
+    datetime ASC;
 END;
 $$ LANGUAGE plpgsql;
+
 --update future meetings of close contacts
+
 /**
 * UTILITY ROUTINES FOR DATA GENERATION
 */
+
 -- extracting initials for email generation
 CREATE OR REPLACE FUNCTION get_name_initials
 (
@@ -766,6 +754,7 @@ END LOOP;
 RETURN initials;
 END;
 $$ LANGUAGE plpgsql;
+
 -- create email and assign for employee
 CREATE OR REPLACE FUNCTION assign_email()
 RETURNS TRIGGER
@@ -783,8 +772,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER assign_email_add BEFORE
 INSERT
 ON
-    employees FOR EACH ROW EXECUTE FUNCTION assign_email()
-;
+    employees FOR EACH ROW EXECUTE FUNCTION assign_email();
 
 --Routine to add sessions
 CREATE OR REPLACE FUNCTION generate_random_sessions_table(n INTEGER)
@@ -866,11 +854,10 @@ SELECT DISTINCT
 FROM
     rand_id , rand_man_id , rand_book_id , rand_room
   , get_timestamp
-LIMIT n
-;
-
+LIMIT n;
 END;
 $$ LANGUAGE plpgsql;
+
 -- adding normal sessions
 CREATE OR REPLACE PROCEDURE add_sessions(participant_eid INTEGER, approving_manager_eid INTEGER, booker_eid INTEGER, room INTEGER, floor INTEGER, time_in TIMESTAMP, rname VARCHAR(50))
 AS
@@ -893,11 +880,10 @@ INSERT INTO Sessions
       , $5
       , $6
       , $7
-    )
-;
-
+    );
 END;
 $$ LANGUAGE plpgsql;
+
 -- adding random sessions
 CREATE OR REPLACE PROCEDURE add_random_sessions(how_many_to_insert INTEGER)
 AS
@@ -919,11 +905,10 @@ FROM
     generate_random_sessions_table(how_many_to_insert)
 ON
     CONFLICT(participant_eid, datetime, booker_eid, room, floor) -- primary key
-    DO NOTHING                                                   -- strictly  for dummy data
-;
-
+    DO NOTHING                                                   -- strictly  for dummy data;
 END;
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION view_future_meeting(sDate DATE, eid INTEGER)
 RETURNS TABLE(floor                                  INTEGER, room INTEGER, dateStart TIMESTAMP)
 AS $$
@@ -938,11 +923,10 @@ WHERE
     s.datetime           >= startTimestamp
     AND s.participant_eid = $2
 ORDER BY
-    s.datetime ASC
-;
-
+    s.datetime ASC;
 END;
 $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION get_procedure()
 RETURNS TABLE(procedure name) AS $$
 BEGIN
@@ -957,8 +941,6 @@ FROM
             p.pronamespace = n.oid
 WHERE
     n.nspname not in ('pg_catalog', 'information_schema')
-    and p.prokind = 'p'
-;
-
+    and p.prokind = 'p';
 END;
 $$ LANGUAGE plpgsql;
