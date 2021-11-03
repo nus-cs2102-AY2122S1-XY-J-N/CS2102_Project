@@ -211,26 +211,46 @@ $$ LANGUAGE SQL;
 --is end_hour necessary?
 CREATE OR REPLACE PROCEDURE approve_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)
 AS $$
+--get timestamp from date and time
+
+DECLARE 
+start_date_time TIMESTAMP := (CAST($3 AS TEXT) || ' ' || $4 || ':00:00')::TIMESTAMP;
+end_date_time           TIMESTAMP := (CAST($3 AS TEXT) || ' ' || $5 || ':00:00')::TIMESTAMP;
 BEGIN
-	IF EXISTS
-		(SELECT 1
-		 FROM Manager m, Employees e, Sessions s, Meeting_rooms r
-		 WHERE eid = m.eid --is a manager
-		 --check whether manager's did same as room's did
-		 AND eid = e.eid
-		 AND e.did = r.did
-		 AND s.floor = r.floor
-		 AND s.room = r.room)
-		THEN
-			UPDATE Sessions
-			SET approving_manager_eid = eid
-			WHERE floor = floor_no
-			AND room = room_no;
-			/*AND date from time = date
-			AND hour from time >= start_hour
-			AND hour from time <= end_hour*/
-	END IF;
-END
+-- if meeting exists  in sessions
+IF EXISTS
+(
+       SELECT
+              1
+       FROM
+              Manager       m
+            , Sessions      s
+			, Employees e
+            , Meeting_rooms r
+       WHERE
+              $6 = m.eid --is a manager
+			  AND $6 = e.eid
+              --check whether manager's did same as room's did
+              AND e.did   = r.did
+              AND s.floor = r.floor
+              AND s.room  = r.room
+              --check in bounds
+              AND start_date_time >= s.datetime
+              AND end_date_time   < s.datetime	-- ends with XX:59:00
+)
+THEN
+UPDATE
+       Sessions
+SET    approving_manager_eid = eid
+WHERE
+       floor         = floor_no
+       AND room      = room_no
+       AND datetime >= start_date_time
+       AND datetime < end_date_time	-- ends with XX:59:00
+;
+
+END IF;
+END;
 $$ LANGUAGE plpgsql;
 
 --is end_hour necessary?
