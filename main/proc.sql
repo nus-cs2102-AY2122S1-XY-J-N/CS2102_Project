@@ -256,28 +256,30 @@ $$ LANGUAGE plpgsql;
 --is end_hour necessary?
 CREATE OR REPLACE PROCEDURE leave_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)
 AS $$
+DECLARE
+start_date_time TIMESTAMP := (CAST($3 AS TEXT) || ' ' || $4 || ':00:00')::TIMESTAMP;
+end_date_time   TIMESTAMP := (CAST($3 AS TEXT) || ' ' || $5 || ':00:00')::TIMESTAMP;
 BEGIN
 	IF EXISTS
 		(SELECT 1
 		 FROM Sessions
 		 WHERE approving_manager_eid ISNULL --meeting not approved yet
 		 --check whether eid is participating in the specified meeting
-		 AND participant_eid = eid 
+		 AND participant_eid = $6 
 		 AND floor = floor_no
-		 AND room = room_no);
-		 /*AND date from time = date
-		 AND hour from time >= start_hour
-		 AND hour from time <= end_hour*/
+		 AND room = room_no
+		 AND datetime >= start_date_time
+		 AND datetime < end_date_time
+		 )
 		THEN
 			DELETE FROM Sessions
 			WHERE participant_eid = eid
 			AND floor = floor_no
-			AND room = room_no;
-			/*AND date from time = date
-			AND hour from time >= start_hour
-			AND hour from time <= end_hour*/
+			AND room = room_no
+			AND datetime >= start_date_time
+			AND datetime < end_date_time;
 	END IF;
-END
+END;
 $$ LANGUAGE plpgsql;
 
 --need to consider contact tracing?
