@@ -1,81 +1,54 @@
 --deletes all rows from the following
 TRUNCATE Departments, Meeting_Rooms,Employees,Health_Declaration CASCADE;
 
-CALL add_department (1, 'Sales');
-CALL add_department (2, 'Training');
-CALL add_department (3, 'Product Management');
-CALL add_department (4, 'Marketing');
-CALL add_department (5, 'Business Development');
-CALL add_department (6, 'Services');
-CALL add_department (7, 'Finance');
-CALL add_department (8, 'Events Management');
+/**
+ * Data addition
+ */
+-- add departments
+INSERT INTO Departments VALUES (1, 'Sales');
+INSERT INTO Departments VALUES (2, 'Training');
+INSERT INTO Departments VALUES (3, 'Product Management');
+INSERT INTO Departments VALUES (4, 'Marketing');
+INSERT INTO Departments VALUES (5, 'Business Development');
+INSERT INTO Departments VALUES (6, 'Services');
+INSERT INTO Departments VALUES (7, 'Finance');
+INSERT INTO Departments VALUES (8, 'Events Management');
 
-CALL add_room ('Buffalo', 1, 1, 5);
-CALL add_room ('Eagle', 1, 2, 5);
-CALL add_room ('Snake', 1, 3, 4);
-CALL add_room ('White-eye', 2, 1, 8);
-CALL add_room ('Tortoise', 2, 2, 3);
-CALL add_room ('Deer', 2, 3, 8);
-CALL add_room ('Blue Racer', 3, 1, 4);
-CALL add_room ('Crane', 3, 2, 5);
-CALL add_room ('Gray', 3, 3, 2);
-CALL add_room ('Stork', 4, 1, 1);
-CALL add_room ('Cormorant', 4, 2, 3);
-CALL add_room ('Heron', 4, 3, 1);
-CALL add_room ('Fisher', 5, 1, 2);
-CALL add_room ('Jackrabbit', 5, 2, 5);
-CALL add_room ('Raven', 5, 3, 8);
+-- add rooms
+INSERT INTO Meeting_Rooms VALUES ('Buffalo', 1, 1, 5);
+INSERT INTO Meeting_Rooms VALUES ('Eagle', 1, 2, 5);
+INSERT INTO Meeting_Rooms VALUES ('Snake', 1, 3, 4);
+INSERT INTO Meeting_Rooms VALUES ('White-eye', 2, 1, 8);
+INSERT INTO Meeting_Rooms VALUES ('Tortoise', 2, 2, 3);
+INSERT INTO Meeting_Rooms VALUES ('Deer', 2, 3, 8);
+INSERT INTO Meeting_Rooms VALUES ('Blue Racer', 3, 1, 4);
+INSERT INTO Meeting_Rooms VALUES ('Crane', 3, 2, 5);
+INSERT INTO Meeting_Rooms VALUES ('Gray', 3, 3, 2);
+INSERT INTO Meeting_Rooms VALUES ('Stork', 4, 1, 1);
+INSERT INTO Meeting_Rooms VALUES ('Cormorant', 4, 2, 3);
+INSERT INTO Meeting_Rooms VALUES ('Heron', 4, 3, 1);
+INSERT INTO Meeting_Rooms VALUES ('Fisher', 5, 1, 2);
+INSERT INTO Meeting_Rooms VALUES ('Jackrabbit', 5, 2, 5);
+INSERT INTO Meeting_Rooms VALUES ('Raven', 5, 3, 8);
 
-CALL add_employee ('Anna-diane Dentith', '+7 823 623 8994', 'Manager', 2);
-CALL add_employee ('Somerset Ruckledge', '+52 707 905 4955', 'Manager', 2);
-CALL add_employee ('Julissa Eades', '+386 514 939 1518', 'Manager', 8);
-CALL add_employee ('Reese Klesel', '+86 261 880 6053', 'Junior', 1);
-CALL add_employee ('Candide Allery', '+57 354 243 8810', 'Junior', 4);
-CALL add_employee ('Liva Giacopazzi', '+55 766 477 8836', 'Manager', 8);
-CALL add_employee ('Rebekkah Giscken', '+55 887 461 2873', 'Junior', 7);
-CALL add_employee ('Clarita Kochlin', '+234 624 288 5382', 'Junior', 6);
-CALL add_employee ('Phylys Raatz', '+353 636 356 2036', 'Junior', 1);
-CALL add_employee ('Marwin Stoppe', '+62 173 418 0160', 'Senior', 3);
-CALL add_employee ('Emmerich Fitzsymonds', '+63 229 610 9884', 'Senior', 8);
-CALL add_employee ('Merl Danigel', '+593 138 621 1165', 'Junior', 1);
-CALL add_employee ('Jarrid Fairbairn', '+93 344 686 0880', 'Senior', 7);
-CALL add_employee ('Athene Havick', '+386 530 723 0530', 'Manager', 5);
-CALL add_employee ('Amandie Tegler', '+55 228 837 6855', 'Senior', 1);
-CALL add_employee ('Axel Alexandrou', '+63 342 580 2521', 'Senior', 7);
-CALL add_employee ('Lottie Craig', '+86 100 767 4477', 'Junior', 1);
-CALL add_employee ('Barnard Garnsworthy', '+63 865 417 5689', 'Senior', 8);
-CALL add_employee ('Errick Bennough', '+381 266 549 2972', 'Senior', 3);
-CALL add_employee ('Aubert Trahmel', '+380 557 174 6238', 'Junior', 6);
-
-CALL declare_health (1, current_date, 36.6);
-CALL declare_health (2, current_date, 36.5);
-CALL declare_health (3, current_date, 36.6);
-CALL declare_health (4, current_date, 38.0); --fever
-CALL declare_health (5, current_date, 36.5);
-CALL declare_health (6, current_date, 36.9);
-CALL declare_health (7, current_date, 36.4);
-CALL declare_health (8, current_date, 36.2);
-CALL declare_health (9, current_date, 36.9);
-CALL declare_health (10, current_date, 36.9);
-CALL declare_health (11, current_date, 37.9);	--fever
-CALL declare_health (12, current_date, 36.6);
-CALL declare_health (13, current_date, 36.3);
-CALL declare_health (14, current_date, 37.4);
-CALL declare_health (15, current_date, 37.4);
-CALL declare_health (16, current_date, 36.2);
-CALL declare_health (17, current_date, 37.9); --fever
-CALL declare_health (18, current_date, 36.0);
-CALL declare_health (19, current_date, 37.6); --fever
-CALL declare_health (20, current_date, 36.2);
-
---use in intervals of 5 for efficient generation
-CALL add_random_sessions(5);
-CALL add_random_sessions(5);
-CALL add_random_sessions(5);
-CALL add_random_sessions(5);
-CALL add_random_sessions(5);
-CALL add_random_sessions(5);
-CALL add_random_sessions(5);
-CALL add_random_sessions(5);
-CALL add_random_sessions(5);
-
+-- add employee
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Anna-diane Dentith', '+7 823 623 8994', 'Manager', 2);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Somerset Ruckledge', '+52 707 905 4955', 'Manager', 2);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Julissa Eades', '+386 514 939 1518', 'Manager', 8);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Reese Klesel', '+86 261 880 6053', 'Junior', 1);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Candide Allery', '+57 354 243 8810', 'Junior', 4);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Liva Giacopazzi', '+55 766 477 8836', 'Manager', 8);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Rebekkah Giscken', '+55 887 461 2873', 'Junior', 7);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Clarita Kochlin', '+234 624 288 5382', 'Junior', 6);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Phylys Raatz', '+353 636 356 2036', 'Junior', 1);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Marwin Stoppe', '+62 173 418 0160', 'Senior', 3);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Emmerich Fitzsymonds', '+63 229 610 9884', 'Senior', 8);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Merl Danigel', '+593 138 621 1165', 'Junior', 1);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Jarrid Fairbairn', '+93 344 686 0880', 'Senior', 7);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Athene Havick', '+386 530 723 0530', 'Manager', 5);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Amandie Tegler', '+55 228 837 6855', 'Senior', 1);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Axel Alexandrou', '+63 342 580 2521', 'Senior', 7);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Lottie Craig', '+86 100 767 4477', 'Junior', 1);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Barnard Garnsworthy', '+63 865 417 5689', 'Senior', 8);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Errick Bennough', '+381 266 549 2972', 'Senior', 3);
+INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Aubert Trahmel', '+380 557 174 6238', 'Junior', 6);

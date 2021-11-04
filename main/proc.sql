@@ -945,3 +945,15 @@ WHERE
     and p.prokind = 'p';
 END;
 $$ LANGUAGE plpgsql;
+
+-- Prevent deleting of employees, use remove_employee instead.
+CREATE OR REPLACE FUNCTION stop_delete_employee()
+RETURNS trigger AS $$
+BEGIN
+RAISE EXCEPTION 'Unable to delete record directly. Please use remove_employee';
+END; $$ LANGUAGE plpgsql;
+CREATE TRIGGER stop_delete_statement BEFORE
+DELETE
+ON
+       Employees FOR EACH STATEMENT EXECUTE FUNCTION stop_delete_employee()
+;

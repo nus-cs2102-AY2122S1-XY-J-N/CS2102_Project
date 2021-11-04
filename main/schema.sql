@@ -25,12 +25,12 @@ CREATE TABLE Departments
 CREATE TABLE Employees
        (
               eid SERIAL PRIMARY KEY
-            , ename        VARCHAR(50)
+            , ename        VARCHAR(50) NOT NULL
             , email        TEXT UNIQUE
             , home_contact VARCHAR(50)
             ,
                --design decision
-              hp_contact     VARCHAR(50)
+              hp_contact     VARCHAR(50) NOT NULL
             , office_contact VARCHAR(50)
             , resigned_date  DATE
             , did            INTEGER REFERENCES Departments(did)
