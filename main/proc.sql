@@ -295,6 +295,7 @@ IF EXISTS
               --check whether manager's did same as room's did
               AND e.eid       = approver_eid
               AND e.did       = r.did
+			  AND e.resigned_date IS NOT NULL -- check not resigned
               AND s.floor     = r.floor
               AND s.room      = r.room
               AND s.datetime >= start_datetime
@@ -312,7 +313,7 @@ WHERE
 ;
 
 ELSE
-RAISE EXCEPTION 'Invalid manager entered / Meeting Not Found!';
+RAISE EXCEPTION 'Employee is not a manager/ Manager is not in same department as meeting room/ Employee is resigned / Approver has fever / Meeting Not Found!';
 END IF;
 END
 $$ LANGUAGE plpgsql;
