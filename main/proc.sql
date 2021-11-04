@@ -110,9 +110,8 @@ WHERE
        participant_eid = NEW.eid
        AND datetime   >= CURRENT_DATE::TIMESTAMP
 ;
-
-RETURN NULL;
 END IF;
+RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER retire_employee
