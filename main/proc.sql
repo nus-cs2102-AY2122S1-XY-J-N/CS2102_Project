@@ -428,14 +428,17 @@ RAISE EXCEPTION 'Meeting approved already/Invalid employee entered/ Employee has
 END IF;
 END
 $$ LANGUAGE plpgsql;
-CREATE OR REPLACE PROCEDURE book_room(
-IN floornum integer,
-IN roomnum  integer,
-IN bdate    date,
-IN start_hr integer,
-IN end_hr   integer,
-IN beid     integer)
-AS $$
+
+
+CREATE OR REPLACE PROCEDURE public.book_room(
+    IN floornum integer,
+    IN roomnum integer,
+    IN bdate date,
+    IN start_hr integer,
+    IN end_hr integer,
+    IN beid integer)
+LANGUAGE 'plpgsql'
+AS $BODY$
 DECLARE
 hasFever        boolean;
 bookingTime     time;
@@ -443,27 +446,36 @@ n               integer := end_hr - start_hr;
 j               integer := end_hr - start_hr;
 bookingDatetime timestamp;
 isBooked        boolean := false;
+resignDate      date;
 BEGIN
-IF NOT EXISTS
+select resigned_date into resignDate
+from employees
+where eid = beid;
+
+IF (resignDate IS NOT NULL) THEN
+    RAISE EXCEPTION 'eid % is resigned',beid;
+
+ELSIF NOT EXISTS
 (
-    select
-        1
-    from
-        Manager
-    where
-        eid = beid
-    UNION
-    select
-        1
-    from
-        Senior
-    where
-        eid = beid
+       select
+              1
+       from
+              Manager
+       where
+              eid = beid
+       UNION
+       select
+              1
+       from
+              Senior
+       where
+              eid = beid
 )
 THEN
 RAISE EXCEPTION 'eid % is not a senior or manager', beid;
 END IF;
---If employee is trying to book but didn't declare temperature today, reject his booking
+
+--If employee has fever today, reject booking. If employee didn't declare temp today, accept booking
 select
     fever
 into
@@ -471,17 +483,17 @@ into
 from
     Health_Declaration
 where
-    eid      = beid
-    and date = CURRENT_DATE
+       eid      = beid
+       and date = CURRENT_DATE
 ;
-
 IF NOT FOUND THEN
-RAISE EXCEPTION 'eid % no health declaration on %', beid, CURRENT_DATE;
+    hasFever:= false;
 END IF;
 --Employee declared temp but has fever today
 IF (hasFever IS TRUE) THEN
 RAISE EXCEPTION 'You have fever today, no booking allowed';
 END IF;
+
 --Check if room is booked
 bookingTime     := make_time(start_hr,0,0);
 bookingDatetime := bdate + bookingTime;
@@ -489,14 +501,14 @@ LOOP
 exit when n = 0;
 IF EXISTS
 (
-    select
-        1
-    from
-        Sessions
-    where
-        floor        = floornum
-        and room     = roomnum
-        and datetime = bookingDatetime + make_interval(hours => (n-1))
+       select
+              1
+       from
+              Sessions
+       where
+              floor        = floornum
+              and room     = roomnum
+              and datetime = bookingDatetime + make_interval(hours => (n-1))
 )
 THEN isBooked := true;
 END IF;
@@ -504,41 +516,36 @@ n := n-1;
 END LOOP;
 IF (isBooked IS TRUE) THEN RAISE EXCEPTION 'Time slot unavailable';
 END IF;
+
 --All checks passed, book the slots
 LOOP
 exit when j = 0;
 INSERT INTO Sessions
-    (approving_manager_eid
-      , booker_eid
-      , participant_eid
-      , floor
-      , room
-      , datetime
-      , rname
-    )
-    VALUES
-    (null
-      , beid
-      , beid
-      , floornum
-      , roomnum
-      , bookingDatetime + make_interval(hours => (j-1))
-      , (
-            select
-                rname
-            from
-                meeting_rooms
-            where
-                floor    = floornum
-                and room = roomnum
-        )
-    )
+       (approving_manager_eid
+            , booker_eid
+            , participant_eid
+            , floor
+            , room
+            , datetime
+            , rname
+       )
+       VALUES
+       (null
+            , beid
+            , beid
+            , floornum
+            , roomnum
+            , bookingDatetime + make_interval(hours => (j-1))
+            , (select rname from meeting_rooms where floor = floornum and room = roomnum)
+       )
 ;
 
 j := j-1;
 END LOOP;
 END;
-$$ LANGUAGE plpgsql;
+$BODY$;
+
+
 CREATE OR REPLACE PROCEDURE unbook_room(
 IN floor_in integer,
 IN room_in  integer,
