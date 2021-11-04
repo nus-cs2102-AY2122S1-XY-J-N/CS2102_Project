@@ -6,7 +6,7 @@ psql -U postgres -c "DROP DATABASE IF EXISTS "%dbname%";"
 :: Create new database
 psql -U postgres -c "CREATE DATABASE %dbname%;"
 :: Import files
-psql -d %dbname% -q -U postgres -f schema.sql -f proc.sql -f data.sql
+psql -d %dbname% -q -U postgres -f schema.sql -f data.sql -f proc.sql
 :: Echo done
 echo Finished import. Signing in!
 

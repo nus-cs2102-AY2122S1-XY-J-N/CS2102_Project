@@ -14,7 +14,7 @@ database="RoomsManagerDatabase"
 createdb -U postgres RoomsManagerDatabase
 
 # Import .sql files into database
-psql -d $database -U postgres -f schema.sql -f proc.sql -f data.sql
+psql -d $database -U postgres -f schema.sql -f data.sql -f proc.sql
 
 echo ##########################
 echo ###displaying tables...###
