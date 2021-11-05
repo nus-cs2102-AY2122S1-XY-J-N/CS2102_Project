@@ -4,9 +4,9 @@ echo deleting database...
 :: Drops datebase if found
 psql -U postgres -c "DROP DATABASE IF EXISTS "%dbname%";"
 :: Create new database
-psql -U postgres -c "CREATE DATABASE %dbname%;"
+createdb -U postgres %dbname%
 :: Import files
-psql -d %dbname% -q -U postgres -f schema.sql -f data.sql -f proc.sql
+psql -d "%dbname%" -q -U postgres -f schema.sql -f data.sql -f proc.sql
 :: Echo done
 echo Finished import. Signing in!
 
