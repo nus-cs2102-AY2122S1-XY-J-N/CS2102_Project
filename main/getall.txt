@@ -1,0 +1,10 @@
+::psql commands to get remove procedures, functions, triggers
+
+:: reference: https://dba.stackexchange.com/questions/122742/how-to-drop-all-of-my-functions-in-postgresql/122777#122777
+psql -U postgres -d "RoomsManagerDatabase" -c "DO $do$ DECLARE _sql text; BEGIN SELECT INTO _sql string_agg(format('DROP %s %s;' , CASE prokind WHEN 'f' THEN 'FUNCTION IF EXISTS' WHEN 'a' THEN 'AGGREGATE' WHEN 'p' THEN 'PROCEDURE IF EXISTS' WHEN 'w' THEN 'FUNCTION IF EXISTS' END , oid::regprocedure) , E'\n') FROM pg_proc WHERE pronamespace = 'public'::regnamespace ; IF _sql IS NOT NULL THEN RAISE NOTICE '%', _sql; ELSE RAISE NOTICE 'No fuctions found in schema %', quote_ident(_schema); END IF; END $do$;"
+:: ^ add cascade to end
+
+
+::writes all drop triggers to list (with notice)
+psql -U postgres -d "RoomsManagerDatabase" -c "DO $do$ DECLARE triggNameRecord RECORD; triggTableRecord RECORD; BEGIN FOR triggNameRecord IN select distinct(trigger_name) from information_schema.triggers where trigger_schema = 'public' LOOP FOR triggTableRecord IN SELECT distinct(event_object_table) from information_schema.triggers where trigger_name = triggNameRecord.trigger_name LOOP RAISE NOTICE 'DROP TRIGGER IF EXISTS % ON %;', triggNameRecord.trigger_name, triggTableRecord.event_object_table; END LOOP; END LOOP; END $do$;"
+:: ^ remove notice
