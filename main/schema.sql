@@ -51,7 +51,8 @@ DROP TABLE IF EXISTS Health_Declaration
 DROP VIEW IF EXISTS
 Junior,
 Senior,
-Manager
+Manager,
+session_pax
 ;
 
 --schema for TABLE

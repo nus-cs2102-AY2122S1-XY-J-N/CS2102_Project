@@ -1,5 +1,3 @@
---Drop functions/procedures
-drop procedure if exists book_room,unbook_room;
 /**
 * TRIGGERS
 */
@@ -459,6 +457,8 @@ RAISE EXCEPTION 'Meeting approved already/Invalid employee entered/ Employee has
 END IF;
 END
 $$ LANGUAGE plpgsql;
+
+
 CREATE OR REPLACE PROCEDURE public.book_room(
 IN floornum integer,
 IN roomnum  integer,
