@@ -89,7 +89,11 @@ WITH get_close_contacts AS
                    contact_tracing(NEW.eid)
      )
 -- add close contacts to employees blacklist
-INSERT INTO Blacklist_Employees(eid, sDate, eDate) 
+INSERT INTO Blacklist_Employees
+       (eid
+            , sDate
+            , eDate
+       )
 SELECT
        gcc.eid
      , curr_date
@@ -110,6 +114,22 @@ INSERT
 UPDATE
 ON
        health_declaration FOR EACH ROW EXECUTE PROCEDURE remove_future_meetings_on_fever()
+;
+
+--trigger to notify database admin of addition of close contacts OR fever employee to blacklist
+CREATE OR REPLACE FUNCTION notify_admin_on_blacklist_addition() RETURNS TRIGGER AS 
+$$
+BEGIN 
+	RAISE NOTICE 'Employee % has been added to the blacklist from % to %', NEW.eid, NEW.sDate, NEW.eDate;
+	RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER blacklist_notify_trigger
+AFTER
+INSERT
+ON
+       blacklist_employees FOR EACH ROW EXECUTE FUNCTION notify_admin_on_blacklist_addition()
 ;
 
 --Trigger to stop 2 managers from updating capacity of room in the same day
