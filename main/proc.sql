@@ -435,7 +435,7 @@ IF EXISTS
        FROM
               blacklist_employees be
        WHERE
-              be.eid     = $6
+              be.eid  = $6
               AND $3 >= be.sDate
               AND $3 <= be.eDate
 )
@@ -539,8 +539,6 @@ RAISE EXCEPTION 'Meeting approved already/Invalid employee entered/ Employee has
 END IF;
 END
 $$ LANGUAGE plpgsql;
-
-
 CREATE OR REPLACE PROCEDURE public.book_room(
 IN floornum integer,
 IN roomnum  integer,
@@ -680,8 +678,6 @@ j := j-1;
 END LOOP;
 END;
 $BODY$;
-
-
 CREATE OR REPLACE PROCEDURE unbook_room(
 IN floor_in integer,
 IN room_in  integer,
@@ -1280,8 +1276,37 @@ RETURNS trigger AS $$
 BEGIN
 RAISE EXCEPTION 'Unable to delete record directly. Please use remove_employee';
 END; $$ LANGUAGE plpgsql;
-CREATE TRIGGER stop_delete_statement BEFORE
+CREATE OR REPLACE TRIGGER stop_delete_statement BEFORE
 DELETE
 ON
        Employees FOR EACH STATEMENT EXECUTE FUNCTION stop_delete_employee()
+;
+
+-- Additional check for consistency of database w.r.t contact tracing should database admin use insert instead of procedures
+CREATE OR REPLACE FUNCTION check_sessions_blacklist() RETURNS TRIGGER AS $$
+BEGIN
+DELETE
+FROM
+       Sessions s
+WHERE
+       s.participant_eid IN
+       (
+              SELECT
+                     be.eid
+              FROM
+                     blacklist_employees be
+              WHERE
+                     s.datetime     >= be.sDate::TIMESTAMP
+                     AND s.datetime <= be.eDate::TIMESTAMP
+       )
+;
+
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE TRIGGER check_sessions_blacklist_trigger AFTER
+UPDATE
+       OR
+INSERT
+ON
+       Sessions FOR EACH ROW EXECUTE FUNCTION check_sessions_blacklist()
 ;
