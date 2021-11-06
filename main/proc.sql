@@ -25,6 +25,7 @@ ON
 --procedure to remove employee and their close contacts from all future meeting room bookings IF FEVER
 CREATE OR REPLACE FUNCTION remove_future_meetings_on_fever()
 RETURNS TRIGGER AS $$
+DECLARE curr_date DATE := CURRENT_DATE;
 BEGIN
 IF NEW.fever = 'true' THEN
 -- get close contacts (3 days or less)
@@ -35,14 +36,13 @@ WITH get_close_contacts AS
             FROM
                    contact_tracing(NEW.eid)
      )
+-- 1st check for close contacts 7 days
 DELETE
 FROM
        Sessions s
 WHERE
        (
-              s.participant_eid = NEW.eid
-              OR s.booker_eid   = NEW.eid
-              OR s.participant_eid IN
+              s.participant_eid IN
               (
                      select
                             eid
@@ -51,6 +51,57 @@ WHERE
               ) -- close contact of fever case
        )
        AND s.datetime >= NEW.date::TIMESTAMP
+       AND s.datetime <= NEW.date::TIMESTAMP + INTERVAL '7 DAYS'
+;
+
+-- remove fever fella from ALL future meetings
+DELETE
+FROM
+       Sessions s
+WHERE
+       (
+              s.participant_eid = NEW.eid
+              OR s.booker_eid   = NEW.eid
+       )
+       AND s.datetime >= NEW.date::TIMESTAMP
+;
+
+-- add fever fella to employees blacklist
+INSERT INTO Blacklist_Employees VALUES
+       (NEW.eid
+            , curr_date
+            , curr_date + INTEGER '14' -- 2 weeks work from home, assume best case 14 days as per https://www.webmd.com/lung/covid-recovery-overview#2
+       )
+ON
+       CONFLICT
+       (eid
+            , sDate
+            , eDate
+       )
+       DO NOTHING
+;
+
+WITH get_close_contacts AS
+     (
+            SELECT
+                   eid --returns close contacts
+            FROM
+                   contact_tracing(NEW.eid)
+     )
+-- add close contacts to employees blacklist
+INSERT INTO Blacklist_Employees
+       (eid
+            , sDate
+            , eDate
+       )
+SELECT
+       gcc.eid
+     , curr_date
+     , curr_date + INTEGER '7'
+FROM
+       get_close_contacts gcc
+ON
+       CONFLICT (eid, sDate, eDate) DO NOTHING
 ;
 
 END IF;
@@ -63,6 +114,21 @@ INSERT
 UPDATE
 ON
        health_declaration FOR EACH ROW EXECUTE PROCEDURE remove_future_meetings_on_fever()
+;
+
+--trigger to notify database admin of addition of close contacts OR fever employee to blacklist
+CREATE OR REPLACE FUNCTION notify_admin_on_blacklist_addition() RETURNS TRIGGER AS
+$$
+BEGIN
+RAISE NOTICE 'Employee % has been added to the blacklist from % to %', NEW.eid, NEW.sDate, NEW.eDate;
+RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE TRIGGER blacklist_notify_trigger
+AFTER
+INSERT
+ON
+       blacklist_employees FOR EACH ROW EXECUTE FUNCTION notify_admin_on_blacklist_addition()
 ;
 
 --Trigger to stop 2 managers from updating capacity of room in the same day
@@ -108,6 +174,8 @@ WHERE
        participant_eid = NEW.eid
        AND datetime   >= CURRENT_DATE::TIMESTAMP
 ;
+
+RAISE NOTICE 'Removed % from all future meetings!', NEW.eid;
 END IF;
 RETURN NULL;
 END;
@@ -290,13 +358,13 @@ IF EXISTS
        WHERE
               m.eid = approver_eid --is a manager
               --check whether manager's did same as room's did
-              AND e.eid       = approver_eid
-              AND e.did       = r.did
-			  AND e.resigned_date IS NULL -- check not resigned
-              AND s.floor     = r.floor
-              AND s.room      = r.room
-              AND s.datetime >= start_datetime
-              AND s.datetime  < end_datetime
+              AND e.eid                 = approver_eid
+              AND e.did                 = r.did
+              AND e.resigned_date IS NULL -- check not resigned
+              AND s.floor               = r.floor
+              AND s.room                = r.room
+              AND s.datetime           >= start_datetime
+              AND s.datetime            < end_datetime
 )
 THEN
 UPDATE
@@ -359,6 +427,20 @@ booker_eid_var     INTEGER     := 0;
 rname_var          VARCHAR(50) := '';
 increment_datetime TIMESTAMP   := start_datetime;
 BEGIN
+-- if employee is on blacklist
+IF EXISTS
+(
+       SELECT
+              1
+       FROM
+              blacklist_employees be
+       WHERE
+              be.eid  = $6
+              AND $3 >= be.sDate
+              AND $3 <= be.eDate
+)
+THEN RAISE EXCEPTION 'You cannot join any meeting due to contact tracing measures!';
+END IF;
 IF EXISTS
 (
        SELECT
@@ -457,8 +539,6 @@ RAISE EXCEPTION 'Meeting approved already/Invalid employee entered/ Employee has
 END IF;
 END
 $$ LANGUAGE plpgsql;
-
-
 CREATE OR REPLACE PROCEDURE public.book_room(
 IN floornum integer,
 IN roomnum  integer,
@@ -526,6 +606,20 @@ END IF;
 --Employee declared temp but has fever today
 IF (hasFever IS TRUE) THEN
 RAISE EXCEPTION 'You have fever today, no booking allowed';
+END IF;
+-- else if employee is on blacklist
+IF EXISTS
+(
+       SELECT
+              1
+       FROM
+              blacklist_employees be
+       WHERE
+              be.eid     = beid
+              AND bdate >= be.sDate
+              AND bdate <= be.eDate
+)
+THEN RAISE EXCEPTION 'You cannot join any meeting due to contact tracing measures!';
 END IF;
 --Check if room is booked
 bookingTime     := make_time(start_hr,0,0);
@@ -1128,11 +1222,12 @@ FROM
        generate_random_sessions_table(how_many_to_insert)
 ON
        CONFLICT(participant_eid, datetime, booker_eid, room, floor) -- primary key
-       DO NOTHING   ;       
-	   -- strictly  for dummy data;
-END
+       DO NOTHING
 ;
 
+-- strictly  for dummy data;
+END
+;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION view_future_meeting(sDate DATE, eid INTEGER)
 RETURNS TABLE(floor                                  INTEGER, room INTEGER, dateStart TIMESTAMP)
@@ -1181,45 +1276,37 @@ RETURNS trigger AS $$
 BEGIN
 RAISE EXCEPTION 'Unable to delete record directly. Please use remove_employee';
 END; $$ LANGUAGE plpgsql;
-CREATE TRIGGER stop_delete_statement BEFORE
+CREATE OR REPLACE TRIGGER stop_delete_statement BEFORE
 DELETE
 ON
        Employees FOR EACH STATEMENT EXECUTE FUNCTION stop_delete_employee()
 ;
 
--- drop all procedures, useful for importing a fresh database
--- reference: https://dba.stackexchange.com/questions/122742/how-to-drop-all-of-my-functions-in-postgresql
-CREATE OR REPLACE PROCEDURE drop_all_procedures() AS
-$$
+-- Additional check for consistency of database w.r.t contact tracing should database admin use insert instead of procedures
+CREATE OR REPLACE FUNCTION check_sessions_blacklist() RETURNS TRIGGER AS $$
 BEGIN
-DO
-$do$
-DECLARE
-   _sql text;
-BEGIN
-   SELECT INTO _sql
-          string_agg(format('DROP %s %s;'
-                          , CASE prokind
-                              WHEN 'f' THEN 'FUNCTION'
-                              WHEN 'a' THEN 'AGGREGATE'
-                              WHEN 'p' THEN 'PROCEDURE'
-                              WHEN 'w' THEN 'FUNCTION'  -- window function (rarely applicable)
-                              -- ELSE NULL              -- not possible in pg 11
-                            END
-                          , oid::regprocedure)
-                   , E'\n')
-   FROM   pg_proc
-   WHERE  pronamespace = 'public'::regnamespace  -- schema name here!
-   -- AND    prokind = ANY ('{f,a,p,w}')         -- optionally filter kinds
-   ;
+DELETE
+FROM
+       Sessions s
+WHERE
+       s.participant_eid IN
+       (
+              SELECT
+                     be.eid
+              FROM
+                     blacklist_employees be
+              WHERE
+                     s.datetime     >= be.sDate::TIMESTAMP
+                     AND s.datetime <= be.eDate::TIMESTAMP
+       )
+;
 
-   IF _sql IS NOT NULL THEN
-      RAISE NOTICE '%', _sql;  -- debug / check first
-      -- EXECUTE _sql;         -- uncomment payload once you are sure
-   ELSE 
-      RAISE NOTICE 'No fuctions found in schema %', quote_ident(_schema);
-   END IF;
-END
-$do$;
 END;
 $$ LANGUAGE plpgsql;
+CREATE OR REPLACE TRIGGER check_sessions_blacklist_trigger AFTER
+UPDATE
+       OR
+INSERT
+ON
+       Sessions FOR EACH ROW EXECUTE FUNCTION check_sessions_blacklist()
+;
