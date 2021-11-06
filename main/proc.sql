@@ -117,14 +117,13 @@ ON
 ;
 
 --trigger to notify database admin of addition of close contacts OR fever employee to blacklist
-CREATE OR REPLACE FUNCTION notify_admin_on_blacklist_addition() RETURNS TRIGGER AS 
+CREATE OR REPLACE FUNCTION notify_admin_on_blacklist_addition() RETURNS TRIGGER AS
 $$
-BEGIN 
-	RAISE NOTICE 'Employee % has been added to the blacklist from % to %', NEW.eid, NEW.sDate, NEW.eDate;
-	RETURN NULL;
+BEGIN
+RAISE NOTICE 'Employee % has been added to the blacklist from % to %', NEW.eid, NEW.sDate, NEW.eDate;
+RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE TRIGGER blacklist_notify_trigger
 AFTER
 INSERT
@@ -176,6 +175,7 @@ WHERE
        AND datetime   >= CURRENT_DATE::TIMESTAMP
 ;
 
+RAISE NOTICE 'Removed % from all future meetings!', NEW.eid;
 END IF;
 RETURN NULL;
 END;
@@ -525,6 +525,8 @@ RAISE EXCEPTION 'Meeting approved already/Invalid employee entered/ Employee has
 END IF;
 END
 $$ LANGUAGE plpgsql;
+
+
 CREATE OR REPLACE PROCEDURE public.book_room(
 IN floornum integer,
 IN roomnum  integer,
@@ -593,6 +595,20 @@ END IF;
 IF (hasFever IS TRUE) THEN
 RAISE EXCEPTION 'You have fever today, no booking allowed';
 END IF;
+-- else if employee is on blacklist
+IF EXISTS
+(
+       SELECT
+              1
+       FROM
+              blacklist_employees be
+       WHERE
+              be.eid     = beid
+              AND bdate >= be.sDate
+              AND bdate <= be.eDate
+)
+THEN RAISE EXCEPTION 'You cannot join any meeting due to contact tracing measures!';
+END IF;
 --Check if room is booked
 bookingTime     := make_time(start_hr,0,0);
 bookingDatetime := bdate + bookingTime;
@@ -650,6 +666,8 @@ j := j-1;
 END LOOP;
 END;
 $BODY$;
+
+
 CREATE OR REPLACE PROCEDURE unbook_room(
 IN floor_in integer,
 IN room_in  integer,
