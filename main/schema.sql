@@ -31,19 +31,24 @@ DROP FUNCTION IF EXISTS non_compliance( date,date) CASCADE;
 DROP PROCEDURE IF EXISTS unbook_room(   integer,integer,date,integer,integer,integer) CASCADE;
 DROP FUNCTION IF EXISTS assign_fever() CASCADE;
 DROP PROCEDURE IF EXISTS book_room(integer,integer,date,integer,integer,integer) CASCADE;
+DROP FUNCTION IF EXISTS notify_admin_on_blacklist_addition() CASCADE;
+DROP FUNCTION IF EXISTS check_sessions_blacklist() CASCADE;
+
 DROP TRIGGER IF EXISTS assign_email_add ON employees;
 DROP TRIGGER IF EXISTS assign_fever_trig ON health_declaration;
 DROP TRIGGER IF EXISTS check_fever ON health_declaration;
 DROP TRIGGER IF EXISTS retire_employee ON employees;
 DROP TRIGGER IF EXISTS stop_delete_statement ON employees;
 DROP TRIGGER IF EXISTS updates_check_trigger ON updates;
+DROP TRIGGER IF EXISTS blacklist_notify_trigger ON blacklist_employees;
 
-DROP TABLE IF EXISTS Health_Declaration CASCADE
-   , Employees CASCADE
-   , Departments CASCADE
-   , Sessions CASCADE 
-   , Meeting_Rooms CASCADE
-   , Updates CASCADE
+
+DROP TABLE IF EXISTS Health_Declaration 
+   , Employees 
+   , Departments
+   , Sessions  
+   , Meeting_Rooms 
+   , Updates 
    , Blacklist_Employee CASCADE
 ;
 
