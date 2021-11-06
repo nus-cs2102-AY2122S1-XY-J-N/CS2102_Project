@@ -2,7 +2,7 @@
 set dbname=RoomsManagerDatabase
 echo deleting database...
 :: Drops datebase if found
-psql -U postgres -c "DROP DATABASE IF EXISTS "%dbname%";"
+psql -U postgres -c "DROP DATABASE IF EXISTS "RoomsManagerDatabase";"
 :: Create new database
 createdb -U postgres %dbname%
 :: Import files
