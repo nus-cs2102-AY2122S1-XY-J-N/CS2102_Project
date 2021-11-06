@@ -35,14 +35,13 @@ WITH get_close_contacts AS
             FROM
                    contact_tracing(NEW.eid)
      )
+-- 1st check for close contacts 7 days
 DELETE
 FROM
        Sessions s
 WHERE
        (
-              s.participant_eid = NEW.eid
-              OR s.booker_eid   = NEW.eid
-              OR s.participant_eid IN
+              s.participant_eid IN
               (
                      select
                             eid
@@ -50,7 +49,18 @@ WHERE
                             get_close_contacts
               ) -- close contact of fever case
        )
-       AND s.datetime >= NEW.date::TIMESTAMP
+       AND s.datetime >= NEW.date::TIMESTAMP AND s.datetime <= NEW.date::TIMESTAMP + INTERVAL '7 DAYS'
+;
+-- remove fever fella from ALL future meetings
+DELETE
+FROM
+       Sessions s
+WHERE
+       (
+              s.participant_eid = NEW.eid
+              OR s.booker_eid   = NEW.eid
+       )
+       AND s.datetime >= NEW.date::TIMESTAMP 
 ;
 
 END IF;
