@@ -25,6 +25,7 @@ ON
 --procedure to remove employee and their close contacts from all future meeting room bookings IF FEVER
 CREATE OR REPLACE FUNCTION remove_future_meetings_on_fever()
 RETURNS TRIGGER AS $$
+DECLARE curr_date DATE := CURRENT_DATE;
 BEGIN
 IF NEW.fever = 'true' THEN
 -- get close contacts (3 days or less)
@@ -49,8 +50,10 @@ WHERE
                             get_close_contacts
               ) -- close contact of fever case
        )
-       AND s.datetime >= NEW.date::TIMESTAMP AND s.datetime <= NEW.date::TIMESTAMP + INTERVAL '7 DAYS'
+       AND s.datetime >= NEW.date::TIMESTAMP
+       AND s.datetime <= NEW.date::TIMESTAMP + INTERVAL '7 DAYS'
 ;
+
 -- remove fever fella from ALL future meetings
 DELETE
 FROM
@@ -60,7 +63,41 @@ WHERE
               s.participant_eid = NEW.eid
               OR s.booker_eid   = NEW.eid
        )
-       AND s.datetime >= NEW.date::TIMESTAMP 
+       AND s.datetime >= NEW.date::TIMESTAMP
+;
+
+-- add fever fella to employees blacklist
+INSERT INTO Blacklist_Employees VALUES
+       (NEW.eid
+            , curr_date
+            , curr_date + INTEGER '14' -- 2 weeks work from home, assume best case 14 days as per https://www.webmd.com/lung/covid-recovery-overview#2
+       )
+ON
+       CONFLICT
+       (eid
+            , sDate
+            , eDate
+       )
+       DO NOTHING
+;
+
+WITH get_close_contacts AS
+     (
+            SELECT
+                   eid --returns close contacts
+            FROM
+                   contact_tracing(NEW.eid)
+     )
+-- add close contacts to employees blacklist
+INSERT INTO Blacklist_Employees(eid, sDate, eDate) 
+SELECT
+       gcc.eid
+     , curr_date
+     , curr_date + INTEGER '7'
+FROM
+       get_close_contacts gcc
+ON
+       CONFLICT (eid, sDate, eDate) DO NOTHING
 ;
 
 END IF;
@@ -118,6 +155,7 @@ WHERE
        participant_eid = NEW.eid
        AND datetime   >= CURRENT_DATE::TIMESTAMP
 ;
+
 END IF;
 RETURN NULL;
 END;
@@ -300,13 +338,13 @@ IF EXISTS
        WHERE
               m.eid = approver_eid --is a manager
               --check whether manager's did same as room's did
-              AND e.eid       = approver_eid
-              AND e.did       = r.did
-			  AND e.resigned_date IS NULL -- check not resigned
-              AND s.floor     = r.floor
-              AND s.room      = r.room
-              AND s.datetime >= start_datetime
-              AND s.datetime  < end_datetime
+              AND e.eid                 = approver_eid
+              AND e.did                 = r.did
+              AND e.resigned_date IS NULL -- check not resigned
+              AND s.floor               = r.floor
+              AND s.room                = r.room
+              AND s.datetime           >= start_datetime
+              AND s.datetime            < end_datetime
 )
 THEN
 UPDATE
@@ -467,8 +505,6 @@ RAISE EXCEPTION 'Meeting approved already/Invalid employee entered/ Employee has
 END IF;
 END
 $$ LANGUAGE plpgsql;
-
-
 CREATE OR REPLACE PROCEDURE public.book_room(
 IN floornum integer,
 IN roomnum  integer,
@@ -1138,11 +1174,12 @@ FROM
        generate_random_sessions_table(how_many_to_insert)
 ON
        CONFLICT(participant_eid, datetime, booker_eid, room, floor) -- primary key
-       DO NOTHING   ;       
-	   -- strictly  for dummy data;
-END
+       DO NOTHING
 ;
 
+-- strictly  for dummy data;
+END
+;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION view_future_meeting(sDate DATE, eid INTEGER)
 RETURNS TABLE(floor                                  INTEGER, room INTEGER, dateStart TIMESTAMP)
@@ -1205,30 +1242,34 @@ BEGIN
 DO
 $do$
 DECLARE
-   _sql text;
+_sql text;
 BEGIN
-   SELECT INTO _sql
-          string_agg(format('DROP %s %s;'
-                          , CASE prokind
-                              WHEN 'f' THEN 'FUNCTION'
-                              WHEN 'a' THEN 'AGGREGATE'
-                              WHEN 'p' THEN 'PROCEDURE'
-                              WHEN 'w' THEN 'FUNCTION'  -- window function (rarely applicable)
-                              -- ELSE NULL              -- not possible in pg 11
-                            END
-                          , oid::regprocedure)
-                   , E'\n')
-   FROM   pg_proc
-   WHERE  pronamespace = 'public'::regnamespace  -- schema name here!
-   -- AND    prokind = ANY ('{f,a,p,w}')         -- optionally filter kinds
-   ;
+SELECT
+INTO
+       _sql string_agg(format('DROP %s %s;' , CASE prokind
+              WHEN 'f'
+                     THEN 'FUNCTION'
+              WHEN 'a'
+                     THEN 'AGGREGATE'
+              WHEN 'p'
+                     THEN 'PROCEDURE'
+              WHEN 'w'
+                     THEN 'FUNCTION' -- window function (rarely applicable)
+                     -- ELSE NULL              -- not possible in pg 11
+       END , oid::regprocedure) , E'\n')
+FROM
+       pg_proc
+WHERE
+       pronamespace = 'public'::regnamespace -- schema name here!
+       -- AND    prokind = ANY ('{f,a,p,w}')         -- optionally filter kinds
+;
 
-   IF _sql IS NOT NULL THEN
-      RAISE NOTICE '%', _sql;  -- debug / check first
-      -- EXECUTE _sql;         -- uncomment payload once you are sure
-   ELSE 
-      RAISE NOTICE 'No fuctions found in schema %', quote_ident(_schema);
-   END IF;
+IF _sql IS NOT NULL THEN
+RAISE NOTICE '%', _sql; -- debug / check first
+-- EXECUTE _sql;         -- uncomment payload once you are sure
+ELSE
+RAISE NOTICE 'No fuctions found in schema %', quote_ident(_schema);
+END IF;
 END
 $do$;
 END;
