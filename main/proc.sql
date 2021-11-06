@@ -427,6 +427,20 @@ booker_eid_var     INTEGER     := 0;
 rname_var          VARCHAR(50) := '';
 increment_datetime TIMESTAMP   := start_datetime;
 BEGIN
+-- if employee is on blacklist
+IF EXISTS
+(
+       SELECT
+              1
+       FROM
+              blacklist_employees be
+       WHERE
+              be.eid     = $6
+              AND $3 >= be.sDate
+              AND $3 <= be.eDate
+)
+THEN RAISE EXCEPTION 'You cannot join any meeting due to contact tracing measures!';
+END IF;
 IF EXISTS
 (
        SELECT
