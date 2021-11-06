@@ -52,3 +52,15 @@ INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Lottie Craig', '+86
 INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Barnard Garnsworthy', '+63 865 417 5689', 'Senior', 8);
 INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Errick Bennough', '+381 266 549 2972', 'Senior', 3);
 INSERT INTO Employees(ename, hp_contact, kind, did) VALUES ('Aubert Trahmel', '+380 557 174 6238', 'Junior', 6);
+
+INSERT INTO updates VALUES
+('2021-11-6',1,5,1,1),
+('2021-11-6',1,5,1,2),
+('2021-11-6',1,5,1,3),
+('2021-11-6',1,8,2,1),
+('2021-11-6',1,8,2,2),
+('2021-11-6',1,8,2,3),
+('2021-11-6',1,10,3,1),
+('2021-11-6',1,10,3,2),
+('2021-11-6',1,10,3,3)
+;
