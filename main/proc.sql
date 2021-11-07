@@ -13,7 +13,7 @@ END IF;
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-CREATE OR REPLACE TRIGGER assign_fever_trig BEFORE
+CREATE TRIGGER assign_fever_trig BEFORE
 INSERT
        OR
 UPDATE
@@ -108,7 +108,7 @@ END IF;
 RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
-CREATE OR REPLACE TRIGGER check_fever AFTER
+CREATE TRIGGER check_fever AFTER
 INSERT
        OR
 UPDATE
@@ -124,7 +124,7 @@ RAISE NOTICE 'Employee % has been added to the blacklist from % to %', NEW.eid, 
 RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
-CREATE OR REPLACE TRIGGER blacklist_notify_trigger
+CREATE TRIGGER blacklist_notify_trigger
 AFTER
 INSERT
 ON
@@ -154,7 +154,7 @@ return new;
 end if;
 end;
 $$ LANGUAGE PLPGSQL;
-CREATE OR REPLACE TRIGGER updates_check_trigger
+CREATE TRIGGER updates_check_trigger
 BEFORE
 INSERT
 ON
@@ -180,7 +180,7 @@ END IF;
 RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
-CREATE OR REPLACE TRIGGER retire_employee
+CREATE TRIGGER retire_employee
 AFTER
 INSERT
        OR
@@ -1073,7 +1073,7 @@ NEW.email := CONCAT(Eabbrv, NEW.eid, EmailEnd);
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-CREATE OR REPLACE TRIGGER assign_email_add BEFORE
+CREATE TRIGGER assign_email_add BEFORE
 INSERT
 ON
        employees FOR EACH ROW EXECUTE FUNCTION assign_email()
@@ -1276,7 +1276,7 @@ RETURNS trigger AS $$
 BEGIN
 RAISE EXCEPTION 'Unable to delete record directly. Please use remove_employee';
 END; $$ LANGUAGE plpgsql;
-CREATE OR REPLACE TRIGGER stop_delete_statement BEFORE
+CREATE TRIGGER stop_delete_statement BEFORE
 DELETE
 ON
        Employees FOR EACH STATEMENT EXECUTE FUNCTION stop_delete_employee()
@@ -1303,7 +1303,7 @@ WHERE
 
 END;
 $$ LANGUAGE plpgsql;
-CREATE OR REPLACE TRIGGER check_sessions_blacklist_trigger AFTER
+CREATE TRIGGER check_sessions_blacklist_trigger AFTER
 UPDATE
        OR
 INSERT
