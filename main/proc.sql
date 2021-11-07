@@ -1298,7 +1298,7 @@ WHERE
               WHERE
                      s.datetime     >= be.sDate::TIMESTAMP
                      AND s.datetime <= be.eDate::TIMESTAMP
-       )
+       );
 RETURN NULL
 ;
 
