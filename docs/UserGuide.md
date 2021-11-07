@@ -65,10 +65,10 @@ Note that this function should be implemented as a trigger with health declarati
 `CALL leave_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)`
 
 ### Search room
-`CALL (min_cap int, meeting_date date, start_hr int, end_hr int)`
+`SELECT * from search_room (min_cap int, meeting_date date, start_hr int, end_hr int)`
 
 ### View booking report
-`CALL (eid int, start_date date)`
+`SELECT * from view_booking_report (eid int, start_date date)`
 
 ## List of admin procedures
 Generating random sessions data with today's date - 1 month from now as timestamp.
