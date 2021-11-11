@@ -4,8 +4,9 @@ Note the syntax to using a procedure: [`CALL name ( [ argument ] [, ...] )`](htt
 ## Before you begin, some syntax-matters
 1. Anything string-related has to be enclosed with `''` for psql.
 2. PostgreSQL uses the `yyyy-mm-dd` format e.g., `2000-12-31`.
-## List of procedures
-xx
+
+## Procedures
+
 ### Adding a department
 `CALL add_department(did INTEGER, IN dname VARCHAR(50));`
 
@@ -64,17 +65,18 @@ Note that this function should be implemented as a trigger with health declarati
 ### Leave meeting
 `CALL leave_meeting (floor_no INTEGER, room_no INTEGER, date DATE, start_hour INTEGER, end_hour INTEGER, eid INTEGER)`
 
-## List of admin procedures
-Generating random sessions data with today's date - 1 month from now as timestamp.
-The input corresponds to how many rows to add
-Note that it's more efficient calling in small numbers multiple times (e.g. 10 rows to add = 5 + 5)
-`CALL add_random_sessions(how_many_to_insert INTEGER)`
+### Searching for a room
+SELECT * FROM `search_room (min_cap int, meeting_date date, start_hr int, end_hr int)`
 
-### Get procedures
-`SELECT get_procedure();`
 
 ### Functions that will activate with triggers
 
 ## Remove_future_meetings_on_fever()
-Deletes all sessions of employee with fever, as well as their close contacts
+Deletes all sessions of employee with fever, as well as their close contacts, adds them to blacklist
+
+## assign_email()
+Assigns an email to an employee (Initials+Eid+@gsnail.com)
+
+## Check_sessions_blacklist()
+Checks if employee in blacklist. If so, delete meeting
 
