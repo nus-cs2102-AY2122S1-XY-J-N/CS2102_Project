@@ -50,6 +50,7 @@ Note that this function should be implemented as a trigger with health declarati
 ### Booking a room
 `CALL book_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer)`
 
+<div style="page-break-after: always;"></div>
 ### Unbooking a room
 `CALL unbook_room (floor integer, room integer, date date, start_hr integer, end_hr integer, booker_eid integer)`
 
